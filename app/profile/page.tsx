@@ -4,10 +4,36 @@ import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
+import { User } from "@supabase/supabase-js";
+
+type Portfolio = {
+  id: string;
+  title: string;
+  description: string | null;
+  category: string | null;
+
+  cover_url: string;
+  pdf_url: string;
+
+  cover_path: string;
+  pdf_path: string;
+
+  user_id: string;
+  uploaded_by: string | null;
+
+  faculty: string | null;
+  university: string | null;
+
+  apply_year: number | null;
+  apply_round: string | null;
+  result: string | null;
+
+  created_at: string;
+};
 
 export default function ProfilePage() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [name, setName] = useState("");
   const [bio, setBio] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
@@ -15,7 +41,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
-  const [portfolios, setPortfolios] = useState<any[]>([]);
+  const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
 
   useEffect(() => {
     const init = async () => {
@@ -33,7 +59,7 @@ export default function ProfilePage() {
       ]);
     };
     init();
-  }, []);
+  }, [router]);
 
   async function fetchProfile(userId: string) {
     const { data } = await supabase
@@ -84,14 +110,14 @@ export default function ProfilePage() {
       if (avatarFile) {
         const path = `${user.id}/avatar.png`;
 
-        // 🔥 overwrite ไฟล์เดิม
+        // overwrite old file
         const { error: uploadError } = await supabase.storage
           .from("avatars")
           .upload(path, avatarFile, { upsert: true });
 
         if (uploadError) throw new Error("อัปโหลดรูปไม่สำเร็จ");
 
-        // 🔥 ดึง URL + กัน cache
+        // url pulling
         const { data } = supabase.storage.from("avatars").getPublicUrl(path);
 
         newAvatarUrl = `${data.publicUrl}?t=${Date.now()}`;
@@ -106,8 +132,12 @@ export default function ProfilePage() {
       if (upsertError) throw new Error("บันทึกข้อมูลไม่สำเร็จ");
       setAvatarUrl(newAvatarUrl);
       setSuccess(true);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ");
+      }
     } finally {
       setLoading(false);
     }
@@ -128,7 +158,7 @@ export default function ProfilePage() {
         throw new Error("ดึงข้อมูลไม่สำเร็จ");
       }
 
-      // ✅ ลบ DB ก่อน
+      // delete that portfolio table first
       const { error: deleteError } = await supabase
         .from("portfolios")
         .delete()
@@ -138,7 +168,7 @@ export default function ProfilePage() {
         throw new Error("ลบข้อมูลไม่สำเร็จ");
       }
 
-      // ✅ ลบไฟล์แบบ best effort
+      //  best effort file delete in storage
       await Promise.allSettled([
         portfolio.cover_path
           ? supabase.storage.from("covers").remove([portfolio.cover_path])
@@ -149,9 +179,12 @@ export default function ProfilePage() {
       ]);
 
       setPortfolios((prev) => prev.filter((p) => p.id !== id));
-    } catch (err: any) {
-      console.error(err.message);
-      alert(err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ");
+      }
     }
   }
 

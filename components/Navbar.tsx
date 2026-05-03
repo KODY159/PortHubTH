@@ -5,13 +5,28 @@ import { useRouter } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
+import { User } from "@supabase/supabase-js";
+
+type Profile = {
+  name: string | null;
+  avatar_url: string | null;
+};
 
 export default function Navbar() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [user, setUser] = useState<any>(null);
-  const [profile, setProfile] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [scrolled, setScrolled] = useState(false);
+
+  async function fetchProfile(userId: string) {
+    const { data } = await supabase
+      .from("profiles")
+      .select("name, avatar_url")
+      .eq("id", userId)
+      .single();
+    setProfile(data);
+  }
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -24,19 +39,15 @@ export default function Navbar() {
       setUser(session?.user ?? null);
       if (session?.user) fetchProfile(session.user.id);
     });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       if (session?.user) fetchProfile(session.user.id);
       else setProfile(null);
     });
     return () => subscription.unsubscribe();
   }, []);
-
-  async function fetchProfile(userId: string) {
-    const { data } = await supabase
-      .from("profiles").select("name, avatar_url").eq("id", userId).single();
-    setProfile(data);
-  }
 
   async function handleLogout() {
     await supabase.auth.signOut();
@@ -45,7 +56,8 @@ export default function Navbar() {
   }
 
   const avatarLetter =
-    profile?.name?.charAt(0).toUpperCase() ?? user?.email?.charAt(0).toUpperCase();
+    profile?.name?.charAt(0).toUpperCase() ??
+    user?.email?.charAt(0).toUpperCase();
 
   return (
     <>
@@ -216,21 +228,41 @@ export default function Navbar() {
         <div className="p-nav-inner">
           {/* Logo */}
           <Link href="/" className="p-logo">
-            <div className="p-logo-mark">P</div>
+            <div className="p-logo-mark">
+              <Image
+                src="/logo.png"
+                alt="logo"
+                width={32}
+                height={32}
+                priority
+                className="object-contain"
+              />
+            </div>
             <span className="p-logo-text">
-              Thai<em>University</em>Ports.io
+              Port<em>Track</em>TH
             </span>
           </Link>
 
           {/* Desktop nav */}
           <div className="p-nav-links">
-            <Link href="/browse" className="p-nav-link">Browse</Link>
+            <Link href="/browse" className="p-nav-link">
+              Browse
+            </Link>
 
             {user ? (
               <>
                 <div className="p-divider" />
                 <Link href="/saved" className="p-saved">
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg
+                    width="11"
+                    height="11"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
                     <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
                   </svg>
                   Saved
@@ -238,22 +270,42 @@ export default function Navbar() {
                 <div className="p-divider" />
                 <Link href="/profile" className="p-profile-chip">
                   {profile?.avatar_url ? (
-                    <Image src={profile.avatar_url} alt="avatar" width={26} height={26}
-                      className="object-cover" style={{ width: 26, height: 26 }} />
+                    <Image
+                      src={profile.avatar_url}
+                      alt="avatar"
+                      width={26}
+                      height={26}
+                      className="object-cover"
+                      style={{ width: 26, height: 26 }}
+                    />
                   ) : (
                     <div className="p-avatar-letter">{avatarLetter}</div>
                   )}
-                  <span className="p-profile-name">{profile?.name ?? user.email}</span>
+                  <span className="p-profile-name">
+                    {profile?.name ?? user.email}
+                  </span>
                 </Link>
-                <button onClick={handleLogout} className="p-logout">Logout</button>
+                <button onClick={handleLogout} className="p-logout">
+                  Logout
+                </button>
                 <div className="p-divider" />
-                <Link href="/uploadpage" className="p-nav-btn">+ Upload</Link>
+                <Link href="/uploadpage" className="p-nav-btn">
+                  + Upload
+                </Link>
               </>
             ) : (
               <>
                 <div className="p-divider" />
-                <Link href="/login" className="p-login">Log in</Link>
-                <Link href="/signup" className="p-nav-btn" style={{ marginLeft: 6 }}>Sign up</Link>
+                <Link href="/login" className="p-login">
+                  Log in
+                </Link>
+                <Link
+                  href="/signup"
+                  className="p-nav-btn"
+                  style={{ marginLeft: 6 }}
+                >
+                  Sign up
+                </Link>
               </>
             )}
           </div>
@@ -267,19 +319,63 @@ export default function Navbar() {
         {/* Mobile menu */}
         {open && (
           <div className="p-mobile-menu">
-            <Link href="/browse" className="p-mobile-link" onClick={() => setOpen(false)}>Browse</Link>
+            <Link
+              href="/browse"
+              className="p-mobile-link"
+              onClick={() => setOpen(false)}
+            >
+              Browse
+            </Link>
             <div className="p-mobile-divider" />
             {user ? (
               <>
-                <Link href="/profile" className="p-mobile-link" onClick={() => setOpen(false)}>Profile</Link>
-                <Link href="/saved" className="p-mobile-link" onClick={() => setOpen(false)}>Saved portfolios</Link>
-                <Link href="/uploadpage" className="p-mobile-btn" onClick={() => setOpen(false)}>+ Upload portfolio</Link>
-                <button onClick={() => { setOpen(false); handleLogout(); }} className="p-mobile-logout">Logout</button>
+                <Link
+                  href="/profile"
+                  className="p-mobile-link"
+                  onClick={() => setOpen(false)}
+                >
+                  Profile
+                </Link>
+                <Link
+                  href="/saved"
+                  className="p-mobile-link"
+                  onClick={() => setOpen(false)}
+                >
+                  Saved portfolios
+                </Link>
+                <Link
+                  href="/uploadpage"
+                  className="p-mobile-btn"
+                  onClick={() => setOpen(false)}
+                >
+                  + Upload portfolio
+                </Link>
+                <button
+                  onClick={() => {
+                    setOpen(false);
+                    handleLogout();
+                  }}
+                  className="p-mobile-logout"
+                >
+                  Logout
+                </button>
               </>
             ) : (
               <>
-                <Link href="/login" className="p-mobile-link" onClick={() => setOpen(false)}>Log in</Link>
-                <Link href="/signup" className="p-mobile-btn" onClick={() => setOpen(false)}>Sign up</Link>
+                <Link
+                  href="/login"
+                  className="p-mobile-link"
+                  onClick={() => setOpen(false)}
+                >
+                  Log in
+                </Link>
+                <Link
+                  href="/signup"
+                  className="p-mobile-btn"
+                  onClick={() => setOpen(false)}
+                >
+                  Sign up
+                </Link>
               </>
             )}
           </div>

@@ -1,4 +1,3 @@
-import { Button } from "@/components/ui/button";
 import PortfolioCard from "@/components/PortfolioCard";
 import Link from "next/link";
 import createClient from "@/lib/supabaseServer";
@@ -12,16 +11,21 @@ export default async function Home() {
     .order("created_at", { ascending: false })
     .limit(8);
 
-  const { data: { session } } = await supabaseServer.auth.getSession();
+  const {
+    data: { session },
+  } = await supabaseServer.auth.getSession();
   let savedIds = new Set<string>();
   if (session?.user) {
     const { data: saved } = await supabaseServer
-      .from("saved_portfolios").select("portfolio_id").eq("user_id", session.user.id);
-    savedIds = new Set(saved?.map(s => s.portfolio_id) ?? []);
+      .from("saved_portfolios")
+      .select("portfolio_id")
+      .eq("user_id", session.user.id);
+    savedIds = new Set(saved?.map((s) => s.portfolio_id) ?? []);
   }
 
   const { count } = await supabaseServer
-    .from("portfolios").select("*", { count: "exact", head: true });
+    .from("portfolios")
+    .select("*", { count: "exact", head: true });
 
   if (error) return <div>{error.message}</div>;
 
@@ -180,18 +184,24 @@ export default async function Home() {
               <span className="ph-label-line" />
             </div>
             <h1 className="ph-title">
-              รวม Port<em>Folio</em>
+              รวม Port<em>Folio</em>จริง
               <br />
-              จากหลากหลายคณะ
+              จากรุ่นพี่ที่ยื่นติด
               <br />
-              และมหาวิทยาลัย
+              สำรวจแนวทางของแต่ละคณะ
+              <br />
+              และมหาวิทยาลัยชั้นนำ
             </h1>
             <p className="ph-sub">
-              ค้นพบ Portfolio จากคณะและสาขาต่างๆ ของมหาวิทยาลัยดังอีกมากมาย
+              ค้นพบพอร์ตจริงจากหลากหลายคณะ ของมหาวิทยาลัยชั้นนำทั่วประเทศ
             </p>
             <div className="ph-btns">
-              <Link href="/browse" className="ph-btn-p">Browse portfolios</Link>
-              <Link href="/uploadpage" className="ph-btn-s">Upload yours</Link>
+              <Link href="/browse" className="ph-btn-p">
+                Browse portfolios
+              </Link>
+              <Link href="/uploadpage" className="ph-btn-s">
+                Upload yours
+              </Link>
             </div>
           </div>
         </div>
@@ -241,7 +251,9 @@ export default async function Home() {
 
         {/* ── Browse all CTA ── */}
         <div className="ph-cta" style={{ paddingTop: 32 }}>
-          <Link href="/browse" className="ph-cta-btn">ดูทั้งหมด →</Link>
+          <Link href="/browse" className="ph-cta-btn">
+            ดูทั้งหมด →
+          </Link>
         </div>
       </main>
     </>

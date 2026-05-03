@@ -112,8 +112,12 @@ export default function UploadPage() {
       if (insertError) throw new Error(insertError.message);
 
       router.push("/");
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ");
+      }
       setLoading(false);
     }
   }

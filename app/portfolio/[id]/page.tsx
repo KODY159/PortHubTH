@@ -3,32 +3,44 @@ import Link from "next/link";
 import { ArrowLeftFromLine, ArrowUpRight } from "lucide-react";
 import Image from "next/image";
 
-const CATEGORY_COLORS: Record<string, { bg: string; text: string; border: string }> = {
+const CATEGORY_COLORS: Record<
+  string,
+  { bg: string; text: string; border: string }
+> = {
   "Health Sciences": { bg: "#E6F4F1", text: "#2E6B5E", border: "#8ECEBF" },
-  "Technology":      { bg: "#EBF0F8", text: "#3A5FA8", border: "#9BB8E8" },
-  "Engineering":     { bg: "#EEF4E8", text: "#5C7A3E", border: "#AECB8E" },
-  "Sciences":        { bg: "#E8F4F8", text: "#1E6B8A", border: "#9ECFDF" },
-  "Art":             { bg: "#F5EDE4", text: "#8B5C20", border: "#D4AA68" },
-  "Business":        { bg: "#EEEAF5", text: "#4A3A8B", border: "#B8AEE0" },
-  "Agricultural":    { bg: "#EEF4E8", text: "#3D6B20", border: "#A0C870" },
+  Technology: { bg: "#EBF0F8", text: "#3A5FA8", border: "#9BB8E8" },
+  Engineering: { bg: "#EEF4E8", text: "#5C7A3E", border: "#AECB8E" },
+  Sciences: { bg: "#E8F4F8", text: "#1E6B8A", border: "#9ECFDF" },
+  Art: { bg: "#F5EDE4", text: "#8B5C20", border: "#D4AA68" },
+  Business: { bg: "#EEEAF5", text: "#4A3A8B", border: "#B8AEE0" },
+  Agricultural: { bg: "#EEF4E8", text: "#3D6B20", border: "#A0C870" },
   "Social Sciences": { bg: "#F8EBF0", text: "#A04060", border: "#DDA8BE" },
-  "Design":          { bg: "#F0EBF8", text: "#7B5EA7", border: "#C9B8E8" },
-  "Dev":             { bg: "#E8F4F8", text: "#1E6B8A", border: "#9ECFDF" },
-  "Photo":           { bg: "#EEF4E8", text: "#5C7A3E", border: "#AECB8E" },
-  "Branding":        { bg: "#F8EBF0", text: "#A04060", border: "#DDA8BE" },
-  "Illustration":    { bg: "#F0EBF8", text: "#7B5EA7", border: "#C9B8E8" },
-  "Media":           { bg: "#F5EDE4", text: "#8B5C20", border: "#D4AA68" },
-  "Architecture":    { bg: "#F5EDDF", text: "#8B4513", border: "#D4AA78" },
+  Design: { bg: "#F0EBF8", text: "#7B5EA7", border: "#C9B8E8" },
+  Dev: { bg: "#E8F4F8", text: "#1E6B8A", border: "#9ECFDF" },
+  Photo: { bg: "#EEF4E8", text: "#5C7A3E", border: "#AECB8E" },
+  Branding: { bg: "#F8EBF0", text: "#A04060", border: "#DDA8BE" },
+  Illustration: { bg: "#F0EBF8", text: "#7B5EA7", border: "#C9B8E8" },
+  Media: { bg: "#F5EDE4", text: "#8B5C20", border: "#D4AA68" },
+  Architecture: { bg: "#F5EDDF", text: "#8B4513", border: "#D4AA78" },
 };
 const DEFAULT_CAT = { bg: "#F5F0E8", text: "#4A4640", border: "#C8BFA8" };
 
-const RESULT_STYLE: Record<string, { bg: string; text: string; border: string; dot: string }> = {
-  "ติด":    { bg: "#E8F5EE", text: "#1A5C2E", border: "#8ECEBF", dot: "#2E9D52" },
-  "ไม่ติด": { bg: "#F5E8E8", text: "#8B1A14", border: "#DBA8A5", dot: "#C4381F" },
-  "รอผล":  { bg: "#F5F0DC", text: "#8B6914", border: "#D4C068", dot: "#C4A01F" },
+const RESULT_STYLE: Record<
+  string,
+  { bg: string; text: string; border: string; dot: string }
+> = {
+  ติด: { bg: "#E8F5EE", text: "#1A5C2E", border: "#8ECEBF", dot: "#2E9D52" },
+  ไม่ติด: { bg: "#F5E8E8", text: "#8B1A14", border: "#DBA8A5", dot: "#C4381F" },
+  รอผล: { bg: "#F5F0DC", text: "#8B6914", border: "#D4C068", dot: "#C4A01F" },
 };
 
-export default async function Page({ params }: any) {
+type PageProps = {
+  params: {
+    id: string;
+  };
+};
+
+export default async function Page({ params }: PageProps) {
   const { id } = await params;
 
   const { data, error } = await supabase
@@ -39,13 +51,25 @@ export default async function Page({ params }: any) {
 
   if (error || !data) {
     return (
-      <div style={{ minHeight: "100vh", background: "#F5F0E8", display: "flex", alignItems: "center", justifyContent: "center", color: "#9A9288", fontFamily: "'DM Sans',sans-serif" }}>
+      <div
+        style={{
+          minHeight: "100vh",
+          background: "#F5F0E8",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "#9A9288",
+          fontFamily: "'DM Sans',sans-serif",
+        }}
+      >
         Portfolio not found
       </div>
     );
   }
 
-  const tc = data.category ? (CATEGORY_COLORS[data.category] ?? DEFAULT_CAT) : DEFAULT_CAT;
+  const tc = data.category
+    ? (CATEGORY_COLORS[data.category] ?? DEFAULT_CAT)
+    : DEFAULT_CAT;
   const rs = data.result ? RESULT_STYLE[data.result] : null;
 
   return (
@@ -230,14 +254,23 @@ export default async function Page({ params }: any) {
           <div className="pd-pdf-wrap">
             <div className="pd-pdf-bar">
               <span className="pd-pdf-name">{data.title}.pdf</span>
-              <a href={data.pdf_url} target="_blank" rel="noopener noreferrer" className="pd-pdf-open">
+              <a
+                href={data.pdf_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="pd-pdf-open"
+              >
                 Open in new tab <ArrowUpRight size={11} />
               </a>
             </div>
             <iframe
               src={`${data.pdf_url}#toolbar=0&navpanes=0&scrollbar=1&view=FitH`}
               className="pd-pdf-iframe"
-              style={{ height: "calc(100vh - 120px)", minHeight: "85vh", border: "none" }}
+              style={{
+                height: "calc(100vh - 120px)",
+                minHeight: "85vh",
+                border: "none",
+              }}
             />
           </div>
 
@@ -248,15 +281,34 @@ export default async function Page({ params }: any) {
               {/* Avatar */}
               <div className="pd-av-row">
                 {data.profiles?.avatar_url ? (
-                  <Image src={data.profiles.avatar_url} alt="avatar" width={38} height={38}
-                    className="object-cover" style={{ width: 38, height: 38, border: "2px solid #C4581F" }} loading="eager" />
+                  <Image
+                    src={data.profiles.avatar_url}
+                    alt="avatar"
+                    width={38}
+                    height={38}
+                    className="object-cover"
+                    style={{
+                      width: 38,
+                      height: 38,
+                      border: "2px solid #C4581F",
+                    }}
+                    loading="eager"
+                  />
                 ) : (
-                  <div className="pd-av">{data.profiles?.name?.charAt(0).toUpperCase() ?? "A"}</div>
+                  <div className="pd-av">
+                    {data.profiles?.name?.charAt(0).toUpperCase() ?? "A"}
+                  </div>
                 )}
                 <div>
-                  <div className="pd-av-name">{data.profiles?.name ?? "Anonymous"}</div>
+                  <div className="pd-av-name">
+                    {data.profiles?.name ?? "Anonymous"}
+                  </div>
                   <div className="pd-av-date">
-                    {new Date(data.created_at).toLocaleDateString("th-TH", { year: "numeric", month: "short", day: "numeric" })}
+                    {new Date(data.created_at).toLocaleDateString("th-TH", {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                    })}
                   </div>
                 </div>
               </div>
@@ -267,12 +319,24 @@ export default async function Page({ params }: any) {
               <div className="pd-port-title">{data.title}</div>
 
               {/* Description */}
-              {data.description && <p className="pd-desc">{data.description}</p>}
+              {data.description && (
+                <p className="pd-desc">{data.description}</p>
+              )}
 
               {/* Result badge */}
               {rs && (
-                <div className="pd-result" style={{ background: rs.bg, color: rs.text, borderColor: rs.border }}>
-                  <span className="pd-result-dot" style={{ background: rs.dot }} />
+                <div
+                  className="pd-result"
+                  style={{
+                    background: rs.bg,
+                    color: rs.text,
+                    borderColor: rs.border,
+                  }}
+                >
+                  <span
+                    className="pd-result-dot"
+                    style={{ background: rs.dot }}
+                  />
                   {data.result}
                 </div>
               )}
@@ -280,7 +344,14 @@ export default async function Page({ params }: any) {
               {/* Tags */}
               <div className="pd-tags">
                 {data.category && (
-                  <span className="pd-tag" style={{ background: tc.bg, color: tc.text, borderColor: tc.border }}>
+                  <span
+                    className="pd-tag"
+                    style={{
+                      background: tc.bg,
+                      color: tc.text,
+                      borderColor: tc.border,
+                    }}
+                  >
                     {data.category}
                   </span>
                 )}
@@ -291,7 +362,14 @@ export default async function Page({ params }: any) {
                   <span className="pd-tag pd-uni">{data.university}</span>
                 )}
                 {data.apply_round && (
-                  <span className="pd-tag" style={{ background: "#EDE8DC", color: "#4A4640", borderColor: "#C8BFA8" }}>
+                  <span
+                    className="pd-tag"
+                    style={{
+                      background: "#EDE8DC",
+                      color: "#4A4640",
+                      borderColor: "#C8BFA8",
+                    }}
+                  >
                     {data.apply_round}
                   </span>
                 )}
@@ -304,10 +382,14 @@ export default async function Page({ params }: any) {
                 <div className="pd-note-lines" />
                 <div className="pd-note-label">ข้อมูลการสมัคร</div>
                 {data.apply_year && (
-                  <div className="pd-note-val">ปี <span>{data.apply_year}</span></div>
+                  <div className="pd-note-val">
+                    ปี <span>{data.apply_year}</span>
+                  </div>
                 )}
                 {data.apply_round && (
-                  <div className="pd-note-val">รอบ <span>{data.apply_round}</span></div>
+                  <div className="pd-note-val">
+                    รอบ <span>{data.apply_round}</span>
+                  </div>
                 )}
               </div>
             )}
