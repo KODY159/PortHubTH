@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabaseClient";
+import createClient from "@/lib/supabaseServer";
 import Link from "next/link";
 import { ArrowLeftFromLine, ArrowUpRight } from "lucide-react";
 import Image from "next/image";
@@ -42,6 +42,7 @@ type PageProps = {
 
 export default async function Page({ params }: PageProps) {
   const { id } = await params;
+  const supabase = await createClient();
 
   const { data, error } = await supabase
     .from("portfolios")

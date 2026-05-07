@@ -81,6 +81,10 @@ export default function Navbar() {
 
         /* Logo */
         .p-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+        .p-logo-img {
+          height: 42px;   /* เพิ่มจาก 36 → 42 */
+          width: auto;
+        }
         .p-logo-mark {
           width: 30px; height: 30px;
           background: #C4581F;
@@ -228,18 +232,18 @@ export default function Navbar() {
         <div className="p-nav-inner">
           {/* Logo */}
           <Link href="/" className="p-logo">
-            <div className="p-logo-mark">
-              <Image
-                src="/logo.png"
-                alt="logo"
-                width={32}
-                height={32}
-                priority
-                className="object-contain"
-              />
-            </div>
+            <Image
+              src="/logo.png"
+              alt="logo"
+              width={0}
+              height={0}
+              sizes="100vw"
+              priority
+              className="object-contain"
+              style={{ height: "42px", width: "auto" }}
+            />
             <span className="p-logo-text">
-              Port<em>Track</em>TH
+              Port<em>Base</em>TH
             </span>
           </Link>
 

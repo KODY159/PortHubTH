@@ -158,11 +158,16 @@ export default function ProfilePage() {
         throw new Error("ดึงข้อมูลไม่สำเร็จ");
       }
 
+      if (!user) {
+        throw new Error("Unauthorized");
+      }
+
       // delete that portfolio table first
       const { error: deleteError } = await supabase
         .from("portfolios")
         .delete()
-        .eq("id", id);
+        .eq("id", id)
+        .eq("user_id", user.id);
 
       if (deleteError) {
         throw new Error("ลบข้อมูลไม่สำเร็จ");
