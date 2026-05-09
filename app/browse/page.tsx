@@ -39,8 +39,7 @@ export default async function BrowsePage({
       profiles ( name, avatar_url )
     `,
     )
-    .order("save_count", { ascending: false }) // เรียงตาม save_count
-    .order("created_at", { ascending: false }) // ถ้า save_count เท่ากัน ใช้ created_at
+    .order("score", { ascending: false })
     .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
 
   // Server-side filters

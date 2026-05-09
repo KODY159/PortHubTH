@@ -1,7 +1,9 @@
-import createClient from "@/lib/supabaseServer";
+import createServerClient from "@/lib/supabaseServer";
 import Link from "next/link";
 import { ArrowLeftFromLine, ArrowUpRight } from "lucide-react";
 import Image from "next/image";
+import ShareButtons from "@/components/ShareButtons";
+import type { Metadata } from "next";
 
 const CATEGORY_COLORS: Record<
   string,
@@ -34,6 +36,71 @@ const RESULT_STYLE: Record<
   รอผล: { bg: "#F5F0DC", text: "#8B6914", border: "#D4C068", dot: "#C4A01F" },
 };
 
+type Props = {
+  params: Promise<{ id: string }>;
+};
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { id } = await params;
+
+  const supabase = await createServerClient();
+
+  const { data } = await supabase
+    .from("portfolios")
+    .select(
+      `
+      title,
+      description,
+      cover_url,
+      category,
+      university,
+      faculty
+    `,
+    )
+    .eq("id", id)
+    .single();
+
+  if (!data) {
+    return {
+      title: "Portfolio Not Found | PortBaseTH",
+    };
+  }
+
+  const parts = [data.title, data.faculty, data.university].filter(Boolean);
+  const seoTitle = parts.join(" · ") + " | PortBaseTH";
+
+  const seoDescription =
+    data.description ??
+    `ดูตัวอย่าง Portfolio ${data.category ?? ""} ${data.university ?? ""} บน PortBaseTH`;
+
+  const url = `https://portbaseth.com/portfolio/${id}`;
+
+  return {
+    title: seoTitle,
+
+    description: seoDescription,
+
+    alternates: {
+      canonical: url,
+    },
+
+    openGraph: {
+      title: seoTitle,
+      description: seoDescription,
+      images: data.cover_url
+        ? [{ url: data.cover_url, width: 1200, height: 630 }]
+        : [],
+      type: "article",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: seoTitle,
+      description: seoDescription,
+      images: data.cover_url ? [data.cover_url] : [],
+    },
+  };
+}
+
 type PageProps = {
   params: {
     id: string;
@@ -42,7 +109,7 @@ type PageProps = {
 
 export default async function Page({ params }: PageProps) {
   const { id } = await params;
-  const supabase = await createClient();
+  const supabase = await createServerClient();
 
   const { data, error } = await supabase
     .from("portfolios")
@@ -67,6 +134,28 @@ export default async function Page({ params }: PageProps) {
       </div>
     );
   }
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "CreativeWork",
+    name: data.title,
+    description:
+      data.description ??
+      `Portfolio ${data.category ?? ""} ${data.university ?? ""}`,
+    image: data.cover_url,
+    author: {
+      "@type": "Person",
+      name: data.profiles?.name ?? "Anonymous",
+    },
+    datePublished: data.created_at,
+    keywords: [data.category, data.faculty, data.university]
+      .filter(Boolean)
+      .join(", "),
+    url: `https://portbaseth.com/portfolio/${id}`,
+  };
+
+  await supabase.rpc("increment_view_count", {
+    row_id: id,
+  });
 
   const tc = data.category
     ? (CATEGORY_COLORS[data.category] ?? DEFAULT_CAT)
@@ -75,6 +164,10 @@ export default async function Page({ params }: PageProps) {
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400&display=swap');
 
@@ -394,6 +487,7 @@ export default async function Page({ params }: PageProps) {
                 )}
               </div>
             )}
+            <ShareButtons title={data.title} portfolioId={data.id} />
           </div>
         </div>
       </div>

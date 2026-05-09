@@ -8,7 +8,7 @@ export default async function Home() {
   const { data, error } = await supabaseServer
     .from("portfolios")
     .select(`*, profiles(name, avatar_url)`)
-    .order("created_at", { ascending: false })
+    .order("score", { ascending: false })
     .limit(8);
 
   const {
@@ -184,7 +184,7 @@ export default async function Home() {
               <span className="ph-label-line" />
             </div>
             <h1 className="ph-title">
-              รวม Port<em>Folio</em>จริง
+              รวม Port<em>Folio</em> จริง
               <br />
               จากรุ่นพี่ที่ยื่นติด
               <br />
@@ -193,7 +193,7 @@ export default async function Home() {
               และมหาวิทยาลัยชั้นนำ
             </h1>
             <p className="ph-sub">
-              ค้นพบพอร์ตจริงจากหลากหลายคณะ ของมหาวิทยาลัยชั้นนำทั่วประเทศ
+              เเละร่วมกันเเชร์ประสบการณ์เเละเเนวทางที่ทำให้ติดคณะเเละมหาวิทยาลัยนั้น
             </p>
             <div className="ph-btns">
               <Link href="/browse" className="ph-btn-p">
@@ -233,7 +233,7 @@ export default async function Home() {
               key={item.id}
               id={item.id}
               title={item.title}
-              pdf_url={item.pdf_url}
+              // pdf_url={item.pdf_url}
               cover_url={item.cover_url}
               category={item.category}
               userProfile={item.profiles?.avatar_url}
@@ -243,6 +243,9 @@ export default async function Home() {
               result={item.result}
               initialSaved={savedIds.has(item.id)}
               priority={index < 4}
+              view_count={item.view_count ?? 0}
+              save_count={item.save_count ?? 0}
+              share_count={item.share_count ?? 0}
             />
           ))}
         </div>
