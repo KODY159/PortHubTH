@@ -3,6 +3,17 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
+import { sanitize } from "@/lib/sanitize";
+import {
+  UploadPortfolioSchema,
+  CoverFileSchema,
+  PdfFileSchema,
+} from "@/lib/schemas";
+
+const UploadFormSchema = UploadPortfolioSchema.extend({
+  coverFile: CoverFileSchema,
+  pdfFile: PdfFileSchema,
+});
 
 const CATEGORIES = [
   "Health Sciences",
@@ -30,9 +41,9 @@ export default function EditPortfolioPage() {
   const params = useParams();
   const id = params.id as string;
 
-  // from state
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [story, setStory] = useState("");
   const [category, setCategory] = useState("");
   const [faculty, setFaculty] = useState("");
   const [university, setUniversity] = useState("");
@@ -40,17 +51,14 @@ export default function EditPortfolioPage() {
   const [applyRound, setApplyRound] = useState("");
   const [result, setResult] = useState("");
 
-  // old cover and pdf from DB
   const [oldCoverPath, setOldCoverPath] = useState("");
   const [oldPdfPath, setOldPdfPath] = useState("");
   const [oldCoverUrl, setOldCoverUrl] = useState("");
   const [oldPdfUrl, setOldPdfUrl] = useState("");
 
-  //for new cover and pdf file
   const [newCoverFile, setNewCoverFile] = useState<File | null>(null);
   const [newPdfFile, setNewPdfFile] = useState<File | null>(null);
 
-  //UI state
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -58,7 +66,6 @@ export default function EditPortfolioPage() {
   const [userId, setUserId] = useState("");
   const [notOwner, setNotOwner] = useState(false);
 
-  //fetch old data from portfolios
   useEffect(() => {
     const init = async () => {
       const {
@@ -82,16 +89,15 @@ export default function EditPortfolioPage() {
         return;
       }
 
-      //owner check
       if (data.user_id !== session.user.id) {
         setNotOwner(true);
         setLoading(false);
         return;
       }
 
-      //populate from
       setTitle(data.title ?? "");
       setDescription(data.description ?? "");
+      setStory(data.story ?? "");
       setCategory(data.category ?? "");
       setFaculty(data.faculty ?? "");
       setUniversity(data.university ?? "");
@@ -102,20 +108,32 @@ export default function EditPortfolioPage() {
       setOldPdfPath(data.pdf_path ?? "");
       setOldCoverUrl(data.cover_url ?? "");
       setOldPdfUrl(data.pdf_url ?? "");
-
       setLoading(false);
     };
     init();
   }, [id, router]);
 
-  //save function
   async function handleSave() {
-    if (!title) {
+    const rawTitle = title.trim();
+    const cleanTitle = sanitize.title(rawTitle);
+
+    const rawDescription = description.trim();
+    const cleanDescription = sanitize.description(rawDescription);
+
+    const rawStory = story.trim();
+    const cleanStory = sanitize.story(rawStory);
+
+    const rawFaculty = faculty.trim();
+    const cleanFaculty = sanitize.faculty(rawFaculty);
+
+    const rawUniversity = university.trim();
+    const cleanUniversity = sanitize.university(rawUniversity);
+
+    if (!rawTitle) {
       setError("กรุณากรอก title");
       return;
     }
 
-    //validate new cover and pdf file
     if (newCoverFile) {
       if (!newCoverFile.type.startsWith("image/")) {
         setError("รูปปกต้องเป็นไฟล์รูปภาพ");
@@ -137,6 +155,33 @@ export default function EditPortfolioPage() {
       }
     }
 
+    const SCMresult = UploadFormSchema.safeParse({
+      title: cleanTitle,
+      description: cleanDescription || undefined,
+      story: cleanStory || undefined,
+      category: category || undefined,
+      faculty: cleanFaculty || undefined,
+      university: cleanUniversity || undefined,
+      applyYear: applyYear ? parseInt(applyYear) : undefined,
+      applyRound: applyRound || undefined,
+      result: result || undefined,
+      newCoverFile,
+      newPdfFile,
+    });
+
+    if (!SCMresult.success) {
+      // Zod validate ทุก field แล้วรวม error ทั้งหมด
+      // เอา error แรกมาแสดง
+      const firstError = SCMresult.error.issues[0];
+
+      // path บอกว่า error อยู่ field ไหน เช่น ["coverFile"]
+      const fieldName = firstError.path[0];
+      console.log("Validation failed at:", fieldName, firstError.message);
+
+      setError(firstError.message);
+      return;
+    }
+
     setSaving(true);
     setError("");
     setSuccess(false);
@@ -154,56 +199,50 @@ export default function EditPortfolioPage() {
           .from("covers")
           .upload(newPath, newCoverFile);
         if (uploadError) throw new Error("อัปโหลดรูปปกไม่สำเร็จ");
-
         finalCoverUrl = supabase.storage
           .from("covers")
           .getPublicUrl(uploadData.path).data.publicUrl;
         finalCoverPath = uploadData.path;
-
-        if (oldCoverPath) {
+        if (oldCoverPath)
           await supabase.storage.from("covers").remove([oldCoverPath]);
-        }
       }
 
       if (newPdfFile) {
         const newPath = `${userId}/${Date.now()}.pdf`;
-
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from("portfolios")
           .upload(newPath, newPdfFile);
         if (uploadError) throw new Error("อัปโหลดไฟล์ PDF ไม่สำเร็จ");
-
         finalPdfUrl = supabase.storage
           .from("portfolios")
           .getPublicUrl(uploadData.path).data.publicUrl;
         finalPdfPath = uploadData.path;
-
-        if (oldPdfPath) {
+        if (oldPdfPath)
           await supabase.storage.from("portfolios").remove([oldPdfPath]);
-        }
       }
 
       const { error: updateError } = await supabase
         .from("portfolios")
         .update({
-          title,
-          description,
-          category,
-          faculty,
-          university,
+          title: cleanTitle,
+          description: cleanDescription,
+          story: cleanStory || null,
+          category: category,
+          faculty: cleanFaculty,
+          university: cleanUniversity,
           apply_year: applyYear ? parseInt(applyYear) : null,
           apply_round: applyRound,
-          result,
+          result: result,
           cover_url: finalCoverUrl,
           cover_path: finalCoverPath,
           pdf_url: finalPdfUrl,
           pdf_path: finalPdfPath,
         })
         .eq("id", id);
+
       if (updateError) throw new Error("บันทึกข้อมูลไม่สำเร็จ");
 
       setSuccess(true);
-      // old state update
       setOldCoverUrl(finalCoverUrl);
       setOldCoverPath(finalCoverPath);
       setOldPdfUrl(finalPdfUrl);
@@ -211,15 +250,12 @@ export default function EditPortfolioPage() {
       setNewCoverFile(null);
       setNewPdfFile(null);
     } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message);
-      }
+      if (err instanceof Error) setError(err.message);
     } finally {
       setSaving(false);
     }
   }
 
-  //loading states
   if (loading)
     return (
       <div
@@ -271,92 +307,106 @@ export default function EditPortfolioPage() {
   return (
     <>
       <style>{`
-          @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@300;400;500&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@300;400;500&display=swap');
 
-          .up-root { min-height:100vh; background:#F5F0E8; font-family:'DM Sans',system-ui,sans-serif; color:#1A1714; position:relative; }
-          .up-bg { position:fixed; inset:0; pointer-events:none; z-index:0; background-image:repeating-linear-gradient(0deg,transparent,transparent 27px,#E3DDD0 27px,#E3DDD0 28px); opacity:0.35; }
-          .up-nav { position:sticky; top:0; z-index:50; background:#1A1714; border-bottom:2px solid #C4581F; padding:0 24px; height:50px; display:flex; align-items:center; justify-content:space-between; }
-          .up-nav-logo { display:flex; align-items:center; gap:10px; }
-          .up-nav-mark { width:28px; height:28px; background:#C4581F; display:flex; align-items:center; justify-content:center; font-family:'Playfair Display',serif; font-size:14px; color:#F5F0E8; }
-          .up-nav-brand { font-family:'Playfair Display',serif; font-size:13px; color:#F5F0E8; }
-          .up-nav-back { font-size:10px; color:#9A9288; text-decoration:none; letter-spacing:0.08em; text-transform:uppercase; transition:color 0.2s; }
-          .up-nav-back:hover { color:#C4581F; }
+        .up-root { min-height:100vh; background:#F5F0E8; font-family:'DM Sans',system-ui,sans-serif; color:#1A1714; position:relative; }
+        .up-bg { position:fixed; inset:0; pointer-events:none; z-index:0; background-image:repeating-linear-gradient(0deg,transparent,transparent 27px,#E3DDD0 27px,#E3DDD0 28px); opacity:0.35; }
+        .up-nav { position:sticky; top:0; z-index:50; background:#1A1714; border-bottom:2px solid #C4581F; padding:0 24px; height:50px; display:flex; align-items:center; justify-content:space-between; }
+        .up-nav-logo { display:flex; align-items:center; gap:10px; }
+        .up-nav-mark { width:28px; height:28px; background:#C4581F; display:flex; align-items:center; justify-content:center; font-family:'Playfair Display',serif; font-size:14px; color:#F5F0E8; }
+        .up-nav-brand { font-family:'Playfair Display',serif; font-size:13px; color:#F5F0E8; }
+        .up-nav-back { font-size:10px; color:#9A9288; text-decoration:none; letter-spacing:0.08em; text-transform:uppercase; transition:color 0.2s; }
+        .up-nav-back:hover { color:#C4581F; }
 
-          .up-wrap { position:relative; display:flex; justify-content:center; padding:36px 20px 60px; }
-          .up-form {
-            position:relative; z-index:1; width:100%; max-width:560px;
-            background:#F5F0E8; border:1px solid #D8D1C2; border-top:4px solid #C4581F;
-            padding:32px 28px; box-shadow:0 2px 0 #E3DDD0,0 4px 0 #D8D1C2,0 8px 32px rgba(26,23,20,0.14);
-            display:flex; flex-direction:column; gap:22px;
-            animation:fadeUp 0.45s cubic-bezier(0.22,1,0.36,1) both;
-          }
-          .up-form-title { font-family:'Playfair Display',serif; font-size:22px; font-weight:500; color:#1A1714; letter-spacing:-0.01em; }
-          .up-form-sub { font-size:12px; color:#9A9288; margin-top:2px; }
+        .up-wrap { position:relative; display:flex; justify-content:center; padding:36px 20px 60px; }
+        .up-form {
+          position:relative; z-index:1; width:100%; max-width:560px;
+          background:#F5F0E8; border:1px solid #D8D1C2; border-top:4px solid #C4581F;
+          padding:32px 28px; box-shadow:0 2px 0 #E3DDD0,0 4px 0 #D8D1C2,0 8px 32px rgba(26,23,20,0.14);
+          display:flex; flex-direction:column; gap:22px;
+          animation:fadeUp 0.45s cubic-bezier(0.22,1,0.36,1) both;
+        }
+        .up-form-title { font-family:'Playfair Display',serif; font-size:22px; font-weight:500; color:#1A1714; letter-spacing:-0.01em; }
+        .up-form-sub { font-size:12px; color:#9A9288; margin-top:2px; }
 
-          .up-section-divider { display:flex; align-items:center; gap:10px; }
-          .up-section-label { font-size:9px; letter-spacing:0.18em; text-transform:uppercase; color:#9A9288; white-space:nowrap; font-weight:500; }
-          .up-section-line { flex:1; height:1px; background:#E3DDD0; }
-          .up-section-dot { width:5px; height:5px; background:#C4581F; flex-shrink:0; }
+        .up-section-divider { display:flex; align-items:center; gap:10px; }
+        .up-section-label { font-size:9px; letter-spacing:0.18em; text-transform:uppercase; color:#9A9288; white-space:nowrap; font-weight:500; }
+        .up-section-line { flex:1; height:1px; background:#E3DDD0; }
+        .up-section-dot { width:5px; height:5px; background:#C4581F; flex-shrink:0; }
 
-          .up-label { display:block; font-size:9px; font-weight:500; letter-spacing:0.14em; text-transform:uppercase; color:#6B6560; margin-bottom:5px; }
-          .up-label span { color:#C4581F; }
-          .up-input { width:100%; background:#EDE8DC; border:1px solid #D8D1C2; border-bottom:2px solid #C8BFA8; padding:10px 12px; font-size:13px; color:#1A1714; outline:none; transition:border-color 0.2s,background 0.2s; font-family:'DM Sans',sans-serif; }
-          .up-input:focus { border-color:#C4581F; border-bottom-color:#C4581F; background:#F5F0E8; }
-          .up-input::placeholder { color:#9A9288; }
-          .up-textarea { width:100%; resize:none; background:#EDE8DC; border:1px solid #D8D1C2; border-bottom:2px solid #C8BFA8; padding:10px 12px; font-size:13px; color:#1A1714; outline:none; transition:border-color 0.2s,background 0.2s; font-family:'DM Sans',sans-serif; line-height:1.6; min-height:80px; }
-          .up-textarea:focus { border-color:#C4581F; border-bottom-color:#C4581F; background:#F5F0E8; }
+        .up-label { display:block; font-size:9px; font-weight:500; letter-spacing:0.14em; text-transform:uppercase; color:#6B6560; margin-bottom:5px; }
+        .up-label span { color:#C4581F; }
+        .up-label-hint { color:#9A9288; text-transform:none; letter-spacing:0; font-weight:400; }
 
-          .up-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+        .up-input { width:100%; background:#EDE8DC; border:1px solid #D8D1C2; border-bottom:2px solid #C8BFA8; padding:10px 12px; font-size:13px; color:#1A1714; outline:none; transition:border-color 0.2s,background 0.2s; font-family:'DM Sans',sans-serif; }
+        .up-input:focus { border-color:#C4581F; border-bottom-color:#C4581F; background:#F5F0E8; }
+        .up-input::placeholder { color:#9A9288; }
+        .up-textarea { width:100%; resize:none; background:#EDE8DC; border:1px solid #D8D1C2; border-bottom:2px solid #C8BFA8; padding:10px 12px; font-size:13px; color:#1A1714; outline:none; transition:border-color 0.2s,background 0.2s; font-family:'DM Sans',sans-serif; line-height:1.6; min-height:80px; }
+        .up-textarea:focus { border-color:#C4581F; border-bottom-color:#C4581F; background:#F5F0E8; }
 
-          .up-chips { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px; }
-          .up-chip { font-size:10px; font-weight:500; padding:5px 12px; border:1px solid #D8D1C2; background:#EDE8DC; color:#6B6560; cursor:pointer; transition:all 0.2s; font-family:'DM Sans',sans-serif; letter-spacing:0.03em; }
-          .up-chip:hover { border-color:#C8BFA8; }
-          .up-chip.active { border-width:2px; }
+        /* story textarea */
+        .up-story-wrap { position:relative; }
+        .up-story {
+          width:100%; resize:vertical; background:#EDE8DC;
+          border:1px solid #D8D1C2; border-bottom:2px solid #C8BFA8;
+          padding:10px 12px; font-size:13px; color:#1A1714;
+          outline:none; transition:border-color 0.2s;
+          font-family:'DM Sans',sans-serif; line-height:1.75;
+          min-height:160px;
+          background-image:repeating-linear-gradient(0deg,transparent,transparent calc(1.75em - 1px),#D8D1C2 calc(1.75em - 1px),#D8D1C2 1.75em);
+          background-attachment:local;
+        }
+        .up-story:focus { border-color:#C4581F; border-bottom-color:#C4581F; }
+        .up-story::placeholder { color:#9A9288; }
+        .up-story-counter { position:absolute; bottom:10px; right:12px; font-size:10px; color:#C8BFA8; pointer-events:none; font-family:'DM Sans',sans-serif; }
+        .up-story-counter.warn { color:#C4581F; }
 
-          .up-rounds { display:flex; gap:6px; flex-wrap:wrap; }
-          .up-round { font-size:10px; padding:5px 14px; border:1px solid #D8D1C2; background:#EDE8DC; color:#6B6560; cursor:pointer; transition:all 0.2s; font-family:'DM Sans',sans-serif; }
-          .up-round.active { background:#1A1714; color:#F5F0E8; border-color:#1A1714; }
+        .up-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
 
-          .up-results { display:flex; gap:8px; }
-          .up-result { font-size:11px; font-weight:500; padding:7px 18px; border:1px solid; cursor:pointer; transition:all 0.2s; font-family:'DM Sans',sans-serif; }
+        .up-chips { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px; }
+        .up-chip { font-size:10px; font-weight:500; padding:5px 12px; border:1px solid #D8D1C2; background:#EDE8DC; color:#6B6560; cursor:pointer; transition:all 0.2s; font-family:'DM Sans',sans-serif; letter-spacing:0.03em; }
+        .up-chip:hover { border-color:#C8BFA8; }
+        .up-chip.active { border-width:2px; }
 
-          /* File zone */
-          .up-file-zone { display:flex; flex-direction:column; gap:8px; }
-          .up-current-file { display:flex; align-items:center; gap:10px; padding:10px 12px; background:#EDE8DC; border:1px solid #D8D1C2; }
-          .up-current-thumb { width:36px; height:50px; object-fit:cover; border:1px solid #D8D1C2; flex-shrink:0; }
-          .up-current-info { display:flex; flex-direction:column; gap:2px; flex:1; min-width:0; }
-          .up-current-label { font-size:9px; letter-spacing:0.1em; text-transform:uppercase; color:#9A9288; }
-          .up-current-name { font-size:11px; color:#4A4640; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-          .up-current-badge { font-size:9px; color:#C4581F; letter-spacing:0.06em; text-transform:uppercase; }
+        .up-rounds { display:flex; gap:6px; flex-wrap:wrap; }
+        .up-round { font-size:10px; padding:5px 14px; border:1px solid #D8D1C2; background:#EDE8DC; color:#6B6560; cursor:pointer; transition:all 0.2s; font-family:'DM Sans',sans-serif; }
+        .up-round.active { background:#1A1714; color:#F5F0E8; border-color:#1A1714; }
 
-          .up-dropzone { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; border:1px dashed #C8BFA8; background:#EDE8DC; padding:20px; cursor:pointer; transition:border-color 0.2s,background 0.2s; }
-          .up-dropzone:hover { border-color:#C4581F; background:#F5EDDF; }
-          .up-dropzone.has-file { border-color:#C4581F; background:#F5EDDF; }
-          .up-drop-txt { font-size:11px; color:#9A9288; }
-          .up-drop-filename { font-size:10px; color:#C4581F; font-weight:500; }
-          .up-drop-hint { font-size:10px; color:#B5A484; }
+        .up-results { display:flex; gap:8px; }
+        .up-result { font-size:11px; font-weight:500; padding:7px 18px; border:1px solid; cursor:pointer; transition:all 0.2s; font-family:'DM Sans',sans-serif; }
 
-          .up-error { font-size:11px; color:#8B1A14; background:#F5E8E8; border:1px solid #DBA8A5; padding:10px 12px; }
-          .up-success { font-size:11px; color:#1A5C2E; background:#E8F5EE; border:1px solid #8ECEBF; padding:10px 12px; }
+        .up-file-zone { display:flex; flex-direction:column; gap:8px; }
+        .up-current-file { display:flex; align-items:center; gap:10px; padding:10px 12px; background:#EDE8DC; border:1px solid #D8D1C2; }
+        .up-current-thumb { width:36px; height:50px; object-fit:cover; border:1px solid #D8D1C2; flex-shrink:0; }
+        .up-current-info { display:flex; flex-direction:column; gap:2px; flex:1; min-width:0; }
+        .up-current-label { font-size:9px; letter-spacing:0.1em; text-transform:uppercase; color:#9A9288; }
+        .up-current-badge { font-size:9px; color:#C4581F; letter-spacing:0.06em; text-transform:uppercase; }
+        .up-dropzone { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; border:1px dashed #C8BFA8; background:#EDE8DC; padding:20px; cursor:pointer; transition:border-color 0.2s,background 0.2s; }
+        .up-dropzone:hover { border-color:#C4581F; background:#F5EDDF; }
+        .up-dropzone.has-file { border-color:#C4581F; background:#F5EDDF; }
+        .up-drop-txt { font-size:11px; color:#9A9288; }
+        .up-drop-filename { font-size:10px; color:#C4581F; font-weight:500; }
+        .up-drop-hint { font-size:10px; color:#B5A484; }
 
-          .up-actions { display:flex; gap:10px; }
-          .up-submit { flex:1; background:#1A1714; color:#F5F0E8; border:none; padding:14px; font-size:12px; font-weight:500; letter-spacing:0.12em; text-transform:uppercase; cursor:pointer; transition:background 0.2s,transform 0.15s; font-family:'DM Sans',sans-serif; }
-          .up-submit:hover { background:#C4581F; transform:translateY(-1px); }
-          .up-submit:disabled { opacity:0.4; cursor:not-allowed; transform:none; }
-          .up-cancel { background:#EDE8DC; color:#6B6560; border:1px solid #D8D1C2; padding:14px 20px; font-size:12px; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; cursor:pointer; transition:all 0.2s; font-family:'DM Sans',sans-serif; text-decoration:none; display:flex; align-items:center; }
-          .up-cancel:hover { border-color:#C4581F; color:#C4581F; }
+        .up-error { font-size:11px; color:#8B1A14; background:#F5E8E8; border:1px solid #DBA8A5; padding:10px 12px; }
+        .up-success { font-size:11px; color:#1A5C2E; background:#E8F5EE; border:1px solid #8ECEBF; padding:10px 12px; }
 
-          .up-progress { width:100%; height:3px; background:#E3DDD0; overflow:hidden; }
-          .up-progress-bar { height:100%; background:#C4581F; animation:progress 1.5s ease-in-out infinite; }
+        .up-actions { display:flex; gap:10px; }
+        .up-submit { flex:1; background:#1A1714; color:#F5F0E8; border:none; padding:14px; font-size:12px; font-weight:500; letter-spacing:0.12em; text-transform:uppercase; cursor:pointer; transition:background 0.2s,transform 0.15s; font-family:'DM Sans',sans-serif; }
+        .up-submit:hover { background:#C4581F; transform:translateY(-1px); }
+        .up-submit:disabled { opacity:0.4; cursor:not-allowed; transform:none; }
+        .up-cancel { background:#EDE8DC; color:#6B6560; border:1px solid #D8D1C2; padding:14px 20px; font-size:12px; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; cursor:pointer; transition:all 0.2s; font-family:'DM Sans',sans-serif; text-decoration:none; display:flex; align-items:center; }
+        .up-cancel:hover { border-color:#C4581F; color:#C4581F; }
 
-          @keyframes progress { 0%{width:0%;margin-left:0} 50%{width:60%;margin-left:20%} 100%{width:0%;margin-left:100%} }
-          @keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
-        `}</style>
+        .up-progress { width:100%; height:3px; background:#E3DDD0; overflow:hidden; }
+        .up-progress-bar { height:100%; background:#C4581F; animation:progress 1.5s ease-in-out infinite; }
+        @keyframes progress { 0%{width:0%;margin-left:0} 50%{width:60%;margin-left:20%} 100%{width:0%;margin-left:100%} }
+        @keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+      `}</style>
 
       <div className="up-root">
         <div className="up-bg" />
 
-        {/* Navbar */}
         <nav className="up-nav">
           <div className="up-nav-logo">
             <div className="up-nav-mark">P</div>
@@ -369,7 +419,6 @@ export default function EditPortfolioPage() {
 
         <div className="up-wrap">
           <div className="up-form">
-            {/* Header */}
             <div>
               <div className="up-form-title">Edit portfolio</div>
               <div className="up-form-sub">แก้ไขข้อมูลพอร์ตโฟลิโอของคุณ</div>
@@ -404,11 +453,39 @@ export default function EditPortfolioPage() {
               <label className="up-label">Description</label>
               <textarea
                 className="up-textarea"
-                placeholder="อธิบายผลงานของคุณ"
+                placeholder="อธิบายผลงานของคุณสั้นๆ"
                 value={description}
                 rows={3}
                 onChange={(e) => setDescription(e.target.value)}
               />
+            </div>
+
+            {/* ── Story ── */}
+            <div className="up-section-divider">
+              <div className="up-section-dot" />
+              <span className="up-section-label">Story</span>
+              <div className="up-section-line" />
+            </div>
+
+            <div>
+              <label className="up-label">
+                เล่าประสบการณ์ของคุณ{" "}
+                <span className="up-label-hint">(ไม่บังคับ)</span>
+              </label>
+              <div className="up-story-wrap">
+                <textarea
+                  className="up-story"
+                  placeholder={`เช่น ทำไมถึงเลือกคณะนี้? เตรียม port ยังไง? ใช้เวลานานแค่ไหน? มีเทคนิคอะไรบ้าง? อยากบอกอะไรน้องๆ ที่กำลังเตรียม port...`}
+                  value={story}
+                  onChange={(e) => setStory(e.target.value)}
+                  maxLength={3000}
+                />
+                <span
+                  className={`up-story-counter${story.length > 2700 ? " warn" : ""}`}
+                >
+                  {story.length}/3000
+                </span>
+              </div>
             </div>
 
             {/* ── Category ── */}
@@ -571,21 +648,10 @@ export default function EditPortfolioPage() {
             {/* Cover */}
             <div>
               <label className="up-label">
-                รูปปก
-                <span
-                  style={{
-                    color: "#9A9288",
-                    textTransform: "none",
-                    letterSpacing: 0,
-                    fontWeight: 400,
-                  }}
-                >
-                  {" "}
-                  — เลือกใหม่เพื่อเปลี่ยน
-                </span>
+                รูปปก{" "}
+                <span className="up-label-hint">— เลือกใหม่เพื่อเปลี่ยน</span>
               </label>
               <div className="up-file-zone">
-                {/* แสดงรูปปกเดิม */}
                 {oldCoverUrl && (
                   <div className="up-current-file">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -602,7 +668,6 @@ export default function EditPortfolioPage() {
                     </div>
                   </div>
                 )}
-                {/* dropzone เลือกใหม่ */}
                 <label
                   className={`up-dropzone${newCoverFile ? " has-file" : ""}`}
                 >
@@ -662,21 +727,10 @@ export default function EditPortfolioPage() {
             {/* PDF */}
             <div>
               <label className="up-label">
-                ไฟล์ PDF
-                <span
-                  style={{
-                    color: "#9A9288",
-                    textTransform: "none",
-                    letterSpacing: 0,
-                    fontWeight: 400,
-                  }}
-                >
-                  {" "}
-                  — เลือกใหม่เพื่อเปลี่ยน
-                </span>
+                ไฟล์ PDF{" "}
+                <span className="up-label-hint">— เลือกใหม่เพื่อเปลี่ยน</span>
               </label>
               <div className="up-file-zone">
-                {/* แสดงสถานะ PDF เดิม */}
                 {oldPdfUrl && (
                   <div className="up-current-file">
                     <div
@@ -727,7 +781,6 @@ export default function EditPortfolioPage() {
                     </a>
                   </div>
                 )}
-                {/* dropzone เลือกใหม่ */}
                 <label
                   className={`up-dropzone${newPdfFile ? " has-file" : ""}`}
                 >

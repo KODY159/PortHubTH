@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { Link2, Check, Share2 } from "lucide-react";
+import { useMemo } from "react";
 
 export default function ShareButtons({
   title,
@@ -11,7 +12,10 @@ export default function ShareButtons({
   portfolioId: string;
 }) {
   const [copied, setCopied] = useState(false);
-  const url = typeof window !== "undefined" ? window.location.href : "";
+  const url = useMemo(() => {
+    if (typeof window === "undefined") return "";
+    return window.location.href;
+  }, []);
 
   async function handleCopy() {
     await navigator.clipboard.writeText(url);
@@ -139,7 +143,7 @@ export default function ShareButtons({
           </a>
 
           {/* Native share — only renders if supported */}
-          {"share" in navigator && (
+          {typeof navigator !== "undefined" && "share" in navigator && (
             <button className="sb-btn sb-native" onClick={handleNativeShare}>
               <Share2 size={11} />
               แชร์เพิ่มเติม

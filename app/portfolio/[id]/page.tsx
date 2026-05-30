@@ -2,7 +2,9 @@ import createServerClient from "@/lib/supabaseServer";
 import Link from "next/link";
 import { ArrowLeftFromLine, ArrowUpRight } from "lucide-react";
 import Image from "next/image";
-import ShareButtons from "@/components/ShareButtons";
+import ShareButtons from "@/components/ShareButtonsWrapper";
+import StoryCardClient from "@/components/StoryCardClient";
+import QASection from "@/components/QASection";
 import type { Metadata } from "next";
 
 const CATEGORY_COLORS: Record<
@@ -36,54 +38,31 @@ const RESULT_STYLE: Record<
   รอผล: { bg: "#F5F0DC", text: "#8B6914", border: "#D4C068", dot: "#C4A01F" },
 };
 
-type Props = {
-  params: Promise<{ id: string }>;
-};
+type Props = { params: Promise<{ id: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
-
   const supabase = await createServerClient();
 
   const { data } = await supabase
     .from("portfolios")
-    .select(
-      `
-      title,
-      description,
-      cover_url,
-      category,
-      university,
-      faculty
-    `,
-    )
+    .select("title, description, cover_url, category, university, faculty")
     .eq("id", id)
     .single();
 
-  if (!data) {
-    return {
-      title: "Portfolio Not Found | PortBaseTH",
-    };
-  }
+  if (!data) return { title: "Portfolio Not Found | PortBaseTH" };
 
   const parts = [data.title, data.faculty, data.university].filter(Boolean);
   const seoTitle = parts.join(" · ") + " | PortBaseTH";
-
   const seoDescription =
     data.description ??
     `ดูตัวอย่าง Portfolio ${data.category ?? ""} ${data.university ?? ""} บน PortBaseTH`;
-
   const url = `https://portbaseth.com/portfolio/${id}`;
 
   return {
     title: seoTitle,
-
     description: seoDescription,
-
-    alternates: {
-      canonical: url,
-    },
-
+    alternates: { canonical: url },
     openGraph: {
       title: seoTitle,
       description: seoDescription,
@@ -101,16 +80,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-type PageProps = {
-  params: {
-    id: string;
-  };
-};
-
-export default async function Page({ params }: PageProps) {
+export default async function Page({ params }: { params: { id: string } }) {
   const { id } = await params;
   const supabase = await createServerClient();
 
+  // fetch portfolio + join profiles
   const { data, error } = await supabase
     .from("portfolios")
     .select(`*, profiles(name, avatar_url)`)
@@ -134,6 +108,8 @@ export default async function Page({ params }: PageProps) {
       </div>
     );
   }
+
+  //JSON-LD สำหรับ Google Rich Results
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "CreativeWork",
@@ -142,10 +118,7 @@ export default async function Page({ params }: PageProps) {
       data.description ??
       `Portfolio ${data.category ?? ""} ${data.university ?? ""}`,
     image: data.cover_url,
-    author: {
-      "@type": "Person",
-      name: data.profiles?.name ?? "Anonymous",
-    },
+    author: { "@type": "Person", name: data.profiles?.name ?? "Anonymous" },
     datePublished: data.created_at,
     keywords: [data.category, data.faculty, data.university]
       .filter(Boolean)
@@ -153,9 +126,8 @@ export default async function Page({ params }: PageProps) {
     url: `https://portbaseth.com/portfolio/${id}`,
   };
 
-  await supabase.rpc("increment_view_count", {
-    row_id: id,
-  });
+  //view count
+  await supabase.rpc("increment_view_count", { row_id: id });
 
   const tc = data.category
     ? (CATEGORY_COLORS[data.category] ?? DEFAULT_CAT)
@@ -168,20 +140,19 @@ export default async function Page({ params }: PageProps) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400&display=swap');
 
         .pd-root {
-          min-height: 100vh;
-          background: #F5F0E8;
+          min-height: 100vh; background: #F5F0E8;
           font-family: 'DM Sans', system-ui, sans-serif;
           display: flex; flex-direction: column;
         }
 
         /* ── Navbar ── */
         .pd-nav {
-          background: #1A1714;
-          border-bottom: 2px solid #C4581F;
+          background: #1A1714; border-bottom: 2px solid #C4581F;
           padding: 0 20px; height: 50px;
           display: flex; align-items: center; justify-content: space-between;
           position: sticky; top: 0; z-index: 10;
@@ -200,37 +171,41 @@ export default async function Page({ params }: PageProps) {
         }
         .pd-nav-back:hover { color: #C4581F; }
 
-        /* ── Body layout ── */
+        /*
+          ── Body layout ──
+          mobile  → 1 column: PDF ก่อน sidebar ตาม
+          desktop → 2 column: PDF ซ้าย | sidebar 320px ขวา
+          align-items: start ทำให้ sidebar ไม่ยืดเต็มความสูง PDF
+        */
         .pd-body {
-          flex: 1;
-          display: grid;
+          flex: 1; display: grid;
           grid-template-columns: 1fr;
           gap: 16px; padding: 16px;
           max-width: 1280px; margin: 0 auto; width: 100%;
         }
         @media (min-width: 1024px) {
-          .pd-body { grid-template-columns: 1fr 300px; }
+          .pd-body { grid-template-columns: 1fr 320px; align-items: start; }
         }
 
-        /* ── PDF viewer ── */
+        /*
+          ── PDF viewer ──
+          position: sticky top: 66px ทำให้ PDF ลอยค้างอยู่
+          ขณะที่ sidebar ด้านขวา scroll ลงได้อิสระ (desktop only)
+          66px = navbar height 50px + gap 16px
+        */
         .pd-pdf-wrap {
-          background: #EDE8DC;
-          border: 1px solid #D8D1C2;
-          border-top: 3px solid #C4581F;
+          background: #EDE8DC; border: 1px solid #D8D1C2; border-top: 3px solid #C4581F;
           display: flex; flex-direction: column;
           box-shadow: 0 2px 0 #E3DDD0, 0 4px 0 #D8D1C2, 0 8px 24px rgba(26,23,20,0.12);
           overflow: hidden;
+          position: sticky; top: 66px;
         }
         .pd-pdf-bar {
-          background: #2E2B26;
-          padding: 10px 14px;
+          background: #2E2B26; padding: 10px 14px;
           display: flex; align-items: center; justify-content: space-between;
           border-bottom: 1px solid #1A1714;
         }
-        .pd-pdf-name {
-          font-family: 'DM Mono', monospace;
-          font-size: 10px; color: #9A9288;
-        }
+        .pd-pdf-name { font-family: 'DM Mono', monospace; font-size: 10px; color: #9A9288; }
         .pd-pdf-open {
           display: flex; align-items: center; gap: 5px;
           font-size: 10px; font-weight: 500;
@@ -240,29 +215,26 @@ export default async function Page({ params }: PageProps) {
           transition: background 0.2s;
         }
         .pd-pdf-open:hover { background: #A8461A; }
-        .pd-pdf-iframe {
-          width: 100%; flex: 1;
-          min-height: 85vh;
-        }
+        .pd-pdf-iframe { width: 100%; border: none; }
 
         /* ── Sidebar ── */
         .pd-sidebar { display: flex; flex-direction: column; gap: 12px; }
 
-        /* ── Info card ── */
+        /*
+          ── Info card ──
+          border-top: 3px solid #C4581F เป็น accent สีส้มเข้มด้านบน
+          เหมือนกันทุก card ใน site เพื่อ visual consistency
+        */
         .pd-info {
-          background: #F5F0E8;
-          border: 1px solid #D8D1C2;
-          border-top: 3px solid #C4581F;
+          background: #F5F0E8; border: 1px solid #D8D1C2; border-top: 3px solid #C4581F;
           padding: 18px;
           box-shadow: 0 2px 0 #E3DDD0, 0 4px 12px rgba(26,23,20,0.08);
           animation: fadeUp 0.4s ease both;
         }
 
-        /* Avatar row */
         .pd-av-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
         .pd-av {
-          width: 38px; height: 38px;
-          background: #1A1714; color: #F5F0E8;
+          width: 38px; height: 38px; background: #1A1714; color: #F5F0E8;
           display: flex; align-items: center; justify-content: center;
           font-family: 'Playfair Display', serif; font-size: 16px; font-weight: 500;
           flex-shrink: 0; border: 2px solid #C4581F;
@@ -272,58 +244,54 @@ export default async function Page({ params }: PageProps) {
 
         .pd-divider { height: 1px; background: #E3DDD0; margin: 12px 0; }
 
-        /* Title */
         .pd-port-title {
           font-family: 'Playfair Display', serif;
           font-size: 16px; font-weight: 500; color: #1A1714;
           line-height: 1.35; margin-bottom: 8px;
         }
-
-        /* Description */
         .pd-desc { font-size: 12px; color: #6B6560; line-height: 1.7; margin-bottom: 12px; }
 
-        /* Result badge */
         .pd-result {
           display: inline-flex; align-items: center; gap: 6px;
           font-size: 10px; font-weight: 600; letter-spacing: 0.05em;
-          padding: 5px 12px; border: 1px solid;
-          margin-bottom: 10px;
+          padding: 5px 12px; border: 1px solid; margin-bottom: 10px;
         }
         .pd-result-dot { width: 6px; height: 6px; border-radius: 50%; }
 
-        /* Tags */
         .pd-tags { display: flex; flex-wrap: wrap; gap: 5px; }
         .pd-tag {
           font-size: 9px; font-weight: 500; letter-spacing: 0.06em;
-          padding: 3px 10px; border: 1px solid;
-          transition: filter 0.15s;
+          padding: 3px 10px; border: 1px solid; transition: filter 0.15s;
         }
         .pd-tag:hover { filter: brightness(0.95); }
-
-        /* Faculty special */
         .pd-fac { background: #F5EDDF; color: #8B4513; border-color: #D4AA78; }
-        /* University special */
         .pd-uni { background: #EDE8DC; color: #4A4640; border-color: #C8BFA8; }
 
-        /* ── Ruled note card ── */
+        /*
+          ── Apply info note card ──
+          ruled lines ทำด้วย div overlay ที่มี
+          repeating-linear-gradient แทนที่จะใช้ border-bottom บน element
+          เพราะต้องการให้เส้นต่อเนื่องข้ามทุก element ภายใน card
+        */
         .pd-note-card {
-          background: #F5F0E8;
-          border: 1px solid #D8D1C2;
-          padding: 14px 18px;
-          position: relative; overflow: hidden;
-          animation: fadeUp 0.5s ease 0.1s both;
+          background: #F5F0E8; border: 1px solid #D8D1C2;
+          padding: 14px 18px; position: relative; overflow: hidden;
+          animation: fadeUp 0.5s ease 0.12s both;
         }
         .pd-note-lines {
           position: absolute; inset: 0; pointer-events: none;
-          background-image: repeating-linear-gradient(0deg, transparent, transparent 23px, #E3DDD0 23px, #E3DDD0 24px);
+          background-image: repeating-linear-gradient(
+            0deg, transparent, transparent 23px, #E3DDD0 23px, #E3DDD0 24px
+          );
           opacity: 0.5;
         }
         .pd-note-label {
           position: relative;
           font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase;
           color: #C4581F; margin-bottom: 8px; font-weight: 500;
+          font-family: 'DM Sans', sans-serif;
         }
-        .pd-note-val { position: relative; font-size: 12px; color: #2E2B26; }
+        .pd-note-val { position: relative; font-size: 12px; color: #2E2B26; line-height: 1.8; }
         .pd-note-val span { color: #C4581F; font-weight: 500; }
 
         @keyframes fadeUp {
@@ -333,7 +301,7 @@ export default async function Page({ params }: PageProps) {
       `}</style>
 
       <div className="pd-root">
-        {/* Navbar */}
+        {/* ── Navbar ── */}
         <nav className="pd-nav">
           <span className="pd-nav-title">{data.title}</span>
           <Link href="/" className="pd-nav-back">
@@ -342,9 +310,7 @@ export default async function Page({ params }: PageProps) {
           </Link>
         </nav>
 
-        {/* Body */}
         <div className="pd-body">
-          {/* PDF viewer */}
           <div className="pd-pdf-wrap">
             <div className="pd-pdf-bar">
               <span className="pd-pdf-name">{data.title}.pdf</span>
@@ -360,19 +326,14 @@ export default async function Page({ params }: PageProps) {
             <iframe
               src={`${data.pdf_url}#toolbar=0&navpanes=0&scrollbar=1&view=FitH`}
               className="pd-pdf-iframe"
-              style={{
-                height: "calc(100vh - 120px)",
-                minHeight: "85vh",
-                border: "none",
-              }}
+              style={{ height: "calc(100vh - 120px)", minHeight: "85vh" }}
             />
           </div>
 
-          {/* Sidebar */}
+          {/*Sidebar*/}
           <div className="pd-sidebar">
-            {/* Info card */}
+            {/*info card*/}
             <div className="pd-info">
-              {/* Avatar */}
               <div className="pd-av-row">
                 {data.profiles?.avatar_url ? (
                   <Image
@@ -409,15 +370,12 @@ export default async function Page({ params }: PageProps) {
 
               <div className="pd-divider" />
 
-              {/* Title */}
               <div className="pd-port-title">{data.title}</div>
 
-              {/* Description */}
               {data.description && (
                 <p className="pd-desc">{data.description}</p>
               )}
 
-              {/* Result badge */}
               {rs && (
                 <div
                   className="pd-result"
@@ -435,7 +393,6 @@ export default async function Page({ params }: PageProps) {
                 </div>
               )}
 
-              {/* Tags */}
               <div className="pd-tags">
                 {data.category && (
                   <span
@@ -470,7 +427,16 @@ export default async function Page({ params }: PageProps) {
               </div>
             </div>
 
-            {/* Apply year note card */}
+            {/*Story card*/}
+            {data.story && (
+              <StoryCardClient
+                story={data.story}
+                authorName={data.profiles?.name ?? "Anonymous"}
+                avatarUrl={data.profiles?.avatar_url ?? null}
+              />
+            )}
+
+            {/*Apply info note card*/}
             {(data.apply_year || data.apply_round) && (
               <div className="pd-note-card">
                 <div className="pd-note-lines" />
@@ -487,7 +453,12 @@ export default async function Page({ params }: PageProps) {
                 )}
               </div>
             )}
+
+            {/*Share buttons*/}
             <ShareButtons title={data.title} portfolioId={data.id} />
+
+            {/*QASection*/}
+            <QASection portfolioId={data.id} ownerId={data.user_id} />
           </div>
         </div>
       </div>

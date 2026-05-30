@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { User } from "@supabase/supabase-js";
+import { sanitize } from "@/lib/sanitize";
+import { ProfileSchema, AvatarFileSchema } from "@/lib/schemas";
 
 type Portfolio = {
   id: string;
@@ -87,6 +89,9 @@ export default function ProfilePage() {
   }
 
   async function handleSave() {
+    const cleanName = sanitize.name(name);
+    const cleanBio = sanitize.bio(bio);
+
     if (!user) return;
 
     if (avatarFile) {
@@ -96,6 +101,22 @@ export default function ProfilePage() {
       }
       if (avatarFile.size > 5 * 1024 * 1024) {
         setError("รูปต้องไม่เกิน 5MB");
+        return;
+      }
+    }
+
+    const result = ProfileSchema.safeParse({ cleanName, cleanBio });
+
+    if (!result.success) {
+      setError(result.error.issues[0].message);
+      return;
+    }
+
+    // validate avatar file ถ้ามีการเปลี่ยน
+    if (avatarFile) {
+      const fileResult = AvatarFileSchema.safeParse(avatarFile);
+      if (!fileResult.success) {
+        setError(fileResult.error.issues[0].message);
         return;
       }
     }
@@ -124,8 +145,8 @@ export default function ProfilePage() {
       }
       const { error: upsertError } = await supabase.from("profiles").upsert({
         id: user.id,
-        name,
-        bio,
+        name: cleanName,
+        bio: cleanBio,
         avatar_url: newAvatarUrl,
         updated_at: new Date().toISOString(),
       });
@@ -134,6 +155,7 @@ export default function ProfilePage() {
       setSuccess(true);
     } catch (err: unknown) {
       if (err instanceof Error) {
+        console.error("[Profile:save]", err);
         setError(err.message);
       } else {
         setError("เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ");
@@ -391,7 +413,7 @@ export default function ProfilePage() {
         .pp-port-actions {
           position: absolute; top: 6px; right: 6px;
           display: flex; gap: 4px;
-          opacity: 0; transition: opacity 0.2s;
+          opacity: 0.4; transition: opacity 0.2s;
         }
         .pp-port-item:hover .pp-port-actions { opacity: 1; }
         .pp-port-act {

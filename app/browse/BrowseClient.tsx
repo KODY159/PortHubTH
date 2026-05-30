@@ -17,6 +17,8 @@ type Portfolio = {
   apply_round: string | null;
   result: string | null;
   save_count: number;
+  view_count: number;
+  share_count: number;
   profiles: { name: string | null; avatar_url: string | null } | null;
 };
 
@@ -282,7 +284,6 @@ export default function BrowseClient({
                   key={item.id}
                   id={item.id}
                   title={item.title}
-                  pdf_url={item.pdf_url}
                   cover_url={item.cover_url}
                   category={item.category}
                   userProfile={item.profiles?.avatar_url}
@@ -292,6 +293,9 @@ export default function BrowseClient({
                   result={item.result}
                   initialSaved={savedSet.has(item.id)}
                   priority={index < 4}
+                  view_count={item.view_count ?? 0}
+                  save_count={item.save_count ?? 0}
+                  share_count={item.share_count ?? 0}
                 />
               ))}
             </div>

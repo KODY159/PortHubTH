@@ -3,12 +3,24 @@ import { useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { sanitize } from "@/lib/sanitize";
+import {
+  UploadPortfolioSchema,
+  CoverFileSchema,
+  PdfFileSchema,
+} from "@/lib/schemas";
+
+const UploadFormSchema = UploadPortfolioSchema.extend({
+  coverFile: CoverFileSchema,
+  pdfFile: PdfFileSchema,
+});
 
 export default function UploadPage() {
   const router = useRouter();
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [story, setStory] = useState("");
   const [category, setCategory] = useState("");
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [pdfFile, setPdfFile] = useState<File | null>(null);
@@ -21,6 +33,21 @@ export default function UploadPage() {
   const [result, setResult] = useState("");
 
   async function handleUpload() {
+    const rawTitle = title.trim();
+    const cleanTitle = sanitize.title(rawTitle);
+
+    const rawDescription = description.trim();
+    const cleanDescription = sanitize.description(rawDescription);
+
+    const rawStory = story.trim();
+    const cleanStory = sanitize.story(rawStory);
+
+    const rawFaculty = faculty.trim();
+    const cleanFaculty = sanitize.faculty(rawFaculty);
+
+    const rawUniversity = university.trim();
+    const cleanUniversity = sanitize.university(rawUniversity);
+
     if (!title || !pdfFile || !coverFile) {
       setError("กรุณากรอก title และแนบไฟล์ให้ครบ");
       return;
@@ -46,6 +73,33 @@ export default function UploadPage() {
       return;
     }
 
+    const SCMresult = UploadFormSchema.safeParse({
+      title: cleanTitle,
+      description: cleanDescription || undefined,
+      story: cleanStory || undefined,
+      category: category || undefined,
+      faculty: cleanFaculty || undefined,
+      university: cleanUniversity || undefined,
+      applyYear: applyYear ? parseInt(applyYear) : undefined,
+      applyRound: applyRound || undefined,
+      result: result || undefined,
+      coverFile,
+      pdfFile,
+    });
+
+    if (!SCMresult.success) {
+      // Zod validate ทุก field แล้วรวม error ทั้งหมด
+      // เอา error แรกมาแสดง
+      const firstError = SCMresult.error.issues[0];
+
+      // path บอกว่า error อยู่ field ไหน เช่น ["coverFile"]
+      const fieldName = firstError.path[0];
+      console.log("Validation failed at:", fieldName, firstError.message);
+
+      setError(firstError.message);
+      return;
+    }
+
     setLoading(true);
     setError("");
 
@@ -60,27 +114,22 @@ export default function UploadPage() {
 
       const userId = session.user.id;
 
-      // ✅ สำคัญ: ใช้ folder = userId
       const coverExt = coverFile.name.split(".").pop();
       const coverPath = `${userId}/${Date.now()}.${coverExt}`;
-
       const pdfPath = `${userId}/${Date.now()}.pdf`;
 
-      // upload cover
       const { data: coverData, error: coverError } = await supabase.storage
         .from("covers")
         .upload(coverPath, coverFile);
 
       if (coverError) throw new Error(coverError.message);
 
-      // upload pdf
       const { data: pdfData, error: pdfError } = await supabase.storage
         .from("portfolios")
         .upload(pdfPath, pdfFile);
 
       if (pdfError) throw new Error(pdfError.message);
 
-      // public url
       const coverUrl = supabase.storage
         .from("covers")
         .getPublicUrl(coverData.path).data.publicUrl;
@@ -89,11 +138,12 @@ export default function UploadPage() {
         .from("portfolios")
         .getPublicUrl(pdfData.path).data.publicUrl;
 
-      //เก็บ path ด้วย
       const { error: insertError } = await supabase.from("portfolios").insert({
-        title,
-        description,
-        category,
+        title: cleanTitle,
+        description: cleanDescription || null,
+        story: cleanStory || null,
+        category: category || null,
+
         cover_url: coverUrl,
         pdf_url: pdfUrl,
 
@@ -102,11 +152,14 @@ export default function UploadPage() {
 
         user_id: userId,
         uploaded_by: session.user.email,
-        faculty,
-        university,
+
+        faculty: cleanFaculty || null,
+        university: cleanUniversity || null,
+
         apply_year: applyYear ? parseInt(applyYear) : null,
-        apply_round: applyRound,
-        result,
+        apply_round: applyRound || null,
+
+        result: result || null,
       });
 
       if (insertError) throw new Error(insertError.message);
@@ -150,14 +203,10 @@ export default function UploadPage() {
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@300;400;500&display=swap');
 
         .up-root { min-height: 100vh; background: #F5F0E8; font-family: 'DM Sans', system-ui, sans-serif; color: #1A1714; position: relative; }
-
-        /* ruled bg */
         .up-bg { position: fixed; inset: 0; pointer-events: none; z-index: 0;
           background-image: repeating-linear-gradient(0deg, transparent, transparent 27px, #E3DDD0 27px, #E3DDD0 28px);
           opacity: 0.35;
         }
-
-        /* ── Navbar ── */
         .up-nav {
           position: sticky; top: 0; z-index: 50;
           background: #1A1714; border-bottom: 2px solid #C4581F;
@@ -170,7 +219,6 @@ export default function UploadPage() {
         .up-nav-back { font-size: 10px; color: #9A9288; text-decoration: none; letter-spacing: 0.08em; text-transform: uppercase; transition: color 0.2s; }
         .up-nav-back:hover { color: #C4581F; }
 
-        /* ── Form container ── */
         .up-wrap { position: relative; display: flex; justify-content: center; padding: 36px 20px 60px; }
         .up-form {
           position: relative; z-index: 1;
@@ -184,42 +232,64 @@ export default function UploadPage() {
           animation: fadeUp 0.45s cubic-bezier(0.22,1,0.36,1) both;
         }
 
-        /* ── Header ── */
         .up-form-title { font-family: 'Playfair Display',serif; font-size: 22px; font-weight: 500; color: #1A1714; letter-spacing: -0.01em; }
         .up-form-sub { font-size: 12px; color: #9A9288; margin-top: 2px; }
 
-        /* ── Divider ── */
         .up-section-divider { display: flex; align-items: center; gap: 10px; }
         .up-section-label { font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: #9A9288; white-space: nowrap; font-weight: 500; }
         .up-section-line { flex: 1; height: 1px; background: #E3DDD0; }
         .up-section-dot { width: 5px; height: 5px; background: #C4581F; flex-shrink: 0; }
 
-        /* ── Labels & Inputs ── */
         .up-label { display: block; font-size: 9px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: #6B6560; margin-bottom: 5px; }
         .up-label span { color: #C4581F; }
+        .up-label-hint { color: #9A9288; text-transform: none; letter-spacing: 0; font-weight: 400; }
+
         .up-input {
           width: 100%; background: #EDE8DC;
           border: 1px solid #D8D1C2; border-bottom: 2px solid #C8BFA8;
-          padding: 10px 12px; font-size: 13px; color: #1A1714; outline: none;
-          transition: border-color 0.2s, background 0.2s;
+          padding: 10px 12px; font-size: 13px; color: #1A1714;
+          outline: none; transition: border-color 0.2s, background 0.2s;
           font-family: 'DM Sans',sans-serif;
         }
         .up-input:focus { border-color: #C4581F; border-bottom-color: #C4581F; background: #F5F0E8; }
         .up-input::placeholder { color: #9A9288; }
+
         .up-textarea {
           width: 100%; resize: none; background: #EDE8DC;
           border: 1px solid #D8D1C2; border-bottom: 2px solid #C8BFA8;
-          padding: 10px 12px; font-size: 13px; color: #1A1714; outline: none;
-          transition: border-color 0.2s, background 0.2s;
+          padding: 10px 12px; font-size: 13px; color: #1A1714;
+          outline: none; transition: border-color 0.2s, background 0.2s;
           font-family: 'DM Sans',sans-serif; line-height: 1.6; min-height: 80px;
         }
         .up-textarea:focus { border-color: #C4581F; border-bottom-color: #C4581F; background: #F5F0E8; }
         .up-textarea::placeholder { color: #9A9288; }
 
-        /* ── Two-col ── */
+        /* story textarea — taller + ruled bg */
+        .up-story-wrap { position: relative; }
+        .up-story {
+          width: 100%; resize: vertical; background: #EDE8DC;
+          border: 1px solid #D8D1C2; border-bottom: 2px solid #C8BFA8;
+          padding: 10px 12px; font-size: 13px; color: #1A1714;
+          outline: none; transition: border-color 0.2s, background 0.2s;
+          font-family: 'DM Sans',sans-serif; line-height: 1.75;
+          min-height: 160px;
+          background-image: repeating-linear-gradient(
+            0deg, transparent, transparent calc(1.75em - 1px),
+            #D8D1C2 calc(1.75em - 1px), #D8D1C2 1.75em
+          );
+          background-attachment: local;
+        }
+        .up-story:focus { border-color: #C4581F; border-bottom-color: #C4581F; }
+        .up-story::placeholder { color: #9A9288; }
+        .up-story-counter {
+          position: absolute; bottom: 10px; right: 12px;
+          font-size: 10px; color: #C8BFA8; pointer-events: none;
+          font-family: 'DM Sans',sans-serif;
+        }
+        .up-story-counter.warn { color: #C4581F; }
+
         .up-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
-        /* ── Category chips ── */
         .up-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
         .up-chip {
           font-size: 10px; font-weight: 500; padding: 5px 12px;
@@ -230,7 +300,6 @@ export default function UploadPage() {
         .up-chip:hover { border-color: #C8BFA8; }
         .up-chip.active { border-width: 2px; }
 
-        /* ── Round pills ── */
         .up-rounds { display: flex; gap: 6px; flex-wrap: wrap; }
         .up-round {
           font-size: 10px; padding: 5px 14px;
@@ -241,7 +310,6 @@ export default function UploadPage() {
         .up-round:hover { border-color: #C8BFA8; }
         .up-round.active { background: #1A1714; color: #F5F0E8; border-color: #1A1714; }
 
-        /* ── Result buttons ── */
         .up-results { display: flex; gap: 8px; }
         .up-result {
           font-size: 11px; font-weight: 500; padding: 7px 18px;
@@ -249,7 +317,6 @@ export default function UploadPage() {
           font-family: 'DM Sans',sans-serif; letter-spacing: 0.03em;
         }
 
-        /* ── File drop zones ── */
         .up-dropzone {
           display: flex; flex-direction: column; align-items: center;
           justify-content: center; gap: 8px;
@@ -264,10 +331,8 @@ export default function UploadPage() {
         .up-drop-txt span { color: #C4581F; font-weight: 500; }
         .up-drop-filename { font-size: 10px; color: #C4581F; font-weight: 500; letter-spacing: 0.03em; }
 
-        /* ── Error ── */
         .up-error { font-size: 11px; color: #8B1A14; background: #F5E8E8; border: 1px solid #DBA8A5; padding: 10px 12px; }
 
-        /* ── Submit ── */
         .up-submit {
           width: 100%; background: #1A1714; color: #F5F0E8;
           border: none; padding: 14px; font-size: 12px; font-weight: 500;
@@ -279,22 +344,15 @@ export default function UploadPage() {
         .up-submit:active { transform: translateY(0); }
         .up-submit:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 
-        .up-progress {
-          width: 100%; height: 3px; background: #E3DDD0; overflow: hidden;
-        }
-        .up-progress-bar {
-          height: 100%; background: #C4581F;
-          animation: progress 1.5s ease-in-out infinite;
-        }
+        .up-progress { width: 100%; height: 3px; background: #E3DDD0; overflow: hidden; }
+        .up-progress-bar { height: 100%; background: #C4581F; animation: progress 1.5s ease-in-out infinite; }
         @keyframes progress { 0% { width: 0%; margin-left: 0; } 50% { width: 60%; margin-left: 20%; } 100% { width: 0%; margin-left: 100%; } }
-
         @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
       `}</style>
 
       <div className="up-root">
         <div className="up-bg" />
 
-        {/* Navbar */}
         <nav className="up-nav">
           <div className="up-nav-logo">
             <div className="up-nav-mark">P</div>
@@ -307,20 +365,18 @@ export default function UploadPage() {
 
         <div className="up-wrap">
           <div className="up-form">
-            {/* Header */}
             <div>
               <div className="up-form-title">Upload portfolio</div>
               <div className="up-form-sub">แนบไฟล์ PDF และรูปปกของผลงานคุณ</div>
             </div>
 
-            {/* Progress bar when loading */}
             {loading && (
               <div className="up-progress">
                 <div className="up-progress-bar" />
               </div>
             )}
 
-            {/* ── Basic info ── */}
+            {/* ── ข้อมูลพื้นฐาน ── */}
             <div className="up-section-divider">
               <div className="up-section-dot" />
               <span className="up-section-label">ข้อมูลพื้นฐาน</span>
@@ -343,11 +399,39 @@ export default function UploadPage() {
               <label className="up-label">Description</label>
               <textarea
                 className="up-textarea"
-                placeholder="อธิบายผลงานของคุณ"
+                placeholder="อธิบายผลงานของคุณสั้นๆ"
                 value={description}
                 rows={3}
                 onChange={(e) => setDescription(e.target.value)}
               />
+            </div>
+
+            {/* ── Story ── */}
+            <div className="up-section-divider">
+              <div className="up-section-dot" />
+              <span className="up-section-label">Story</span>
+              <div className="up-section-line" />
+            </div>
+
+            <div>
+              <label className="up-label">
+                เล่าประสบการณ์ของคุณ{" "}
+                <span className="up-label-hint">(ไม่บังคับ)</span>
+              </label>
+              <div className="up-story-wrap">
+                <textarea
+                  className="up-story"
+                  placeholder={`เช่น ทำไมถึงเลือกคณะนี้? เตรียม port ยังไง? ใช้เวลานานแค่ไหน? มีเทคนิคอะไรบ้าง? อยากบอกอะไรน้องๆ ที่กำลังเตรียม port...`}
+                  value={story}
+                  onChange={(e) => setStory(e.target.value)}
+                  maxLength={5000}
+                />
+                <span
+                  className={`up-story-counter${story.length > 4700 ? " warn" : ""}`}
+                >
+                  {story.length}/3000
+                </span>
+              </div>
             </div>
 
             {/* ── Category ── */}
@@ -392,7 +476,7 @@ export default function UploadPage() {
               />
             </div>
 
-            {/* ── University info ── */}
+            {/* ── ข้อมูลมหาวิทยาลัย ── */}
             <div className="up-section-divider">
               <div className="up-section-dot" />
               <span className="up-section-label">ข้อมูลมหาวิทยาลัย</span>
@@ -448,7 +532,7 @@ export default function UploadPage() {
               </div>
             </div>
 
-            {/* ── Result ── */}
+            {/* ── ผลการสมัคร ── */}
             <div className="up-section-divider">
               <div className="up-section-dot" />
               <span className="up-section-label">ผลการสมัคร</span>
@@ -501,7 +585,7 @@ export default function UploadPage() {
               ))}
             </div>
 
-            {/* ── Files ── */}
+            {/* ── ไฟล์ ── */}
             <div className="up-section-divider">
               <div className="up-section-dot" />
               <span className="up-section-label">ไฟล์</span>
@@ -519,7 +603,7 @@ export default function UploadPage() {
                     letterSpacing: 0,
                   }}
                 >
-                  (ไม่เกิน 5MB)
+                  (ไม่เกิน 8MB)
                 </span>
               </label>
               <label className={`up-dropzone${coverFile ? " has-file" : ""}`}>

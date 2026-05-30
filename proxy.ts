@@ -1,48 +1,60 @@
-import { createServerClient } from "@supabase/ssr"
+import { createServerClient } from "@supabase/ssr";
 import { NextResponse } from "next/server";
-import  type { NextRequest } from "next/server";
+import type { NextRequest } from "next/server";
 
 export async function proxy(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request })
+  let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll() { return request.cookies.getAll() },
+        getAll() {
+          return request.cookies.getAll();
+        },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          )
+            supabaseResponse.cookies.set(name, value, options),
+          );
         },
       },
-    }
-  )
+    },
+  );
 
-  //if user login redirect to upload page ifnot go to login page
-  const { data: { user }, error } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  // if dont have session and try to go /upload
-  if (request.nextUrl.pathname.startsWith("/uploadpage")) {
-    if (!user || error){
-      const redirectUrl = request.nextUrl.clone();
-      redirectUrl.pathname = "/login";
-      const response = NextResponse.redirect(redirectUrl);
+  // ── Auth Guard ──────────────────────────────────────────
+  // redirect ไป login ถ้าพยายามเข้า protected route โดยไม่ login
+  const protectedRoutes = ["/uploadpage", "/profile", "/saved"];
+  const isProtected = protectedRoutes.some((route) =>
+    request.nextUrl.pathname.startsWith(route),
+  );
 
-      request.cookies.getAll().forEach((cookie) => {
-        if (cookie.name.startsWith("sb-")){
-          response.cookies.delete(cookie.name);
-        }
-      })
-      return response;
-    }
+  if (isProtected && !user) {
+    const loginUrl = request.nextUrl.clone();
+    loginUrl.pathname = "/login";
+    loginUrl.searchParams.set("next", request.nextUrl.pathname); // จำ path ที่จะไป
+    return NextResponse.redirect(loginUrl);
   }
 
-  return supabaseResponse
-}
+  // ── Security Headers ──────────────────────────────────
+  // เพิ่มทุก response ไม่ใช่แค่ protected routes
+  supabaseResponse.headers.set("X-Frame-Options", "DENY");
+  supabaseResponse.headers.set("X-Content-Type-Options", "nosniff");
+  supabaseResponse.headers.set(
+    "Referrer-Policy",
+    "strict-origin-when-cross-origin",
+  );
 
+  return supabaseResponse;
+}
 
 export const config = {
-  matcher: ["/uploadpage/:path*"],
-}
+  matcher: [
+    // exclude static files and _next folder
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+  ],
+};

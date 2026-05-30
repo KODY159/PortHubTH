@@ -35,7 +35,7 @@ export default async function BrowsePage({
       `
       id, title, description, category, cover_url, pdf_url,
       created_at, faculty, university, apply_year, apply_round, result,
-      save_count,
+      save_count, view_count, share_count,
       profiles ( name, avatar_url )
     `,
     )
