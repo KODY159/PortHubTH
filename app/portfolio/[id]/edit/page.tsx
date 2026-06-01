@@ -54,7 +54,6 @@ export default function EditPortfolioPage() {
   const [oldCoverPath, setOldCoverPath] = useState("");
   const [oldPdfPath, setOldPdfPath] = useState("");
   const [oldCoverUrl, setOldCoverUrl] = useState("");
-  const [oldPdfUrl, setOldPdfUrl] = useState("");
 
   const [newCoverFile, setNewCoverFile] = useState<File | null>(null);
   const [newPdfFile, setNewPdfFile] = useState<File | null>(null);
@@ -107,7 +106,6 @@ export default function EditPortfolioPage() {
       setOldCoverPath(data.cover_path ?? "");
       setOldPdfPath(data.pdf_path ?? "");
       setOldCoverUrl(data.cover_url ?? "");
-      setOldPdfUrl(data.pdf_url ?? "");
       setLoading(false);
     };
     init();
@@ -189,7 +187,6 @@ export default function EditPortfolioPage() {
     try {
       let finalCoverUrl = oldCoverUrl;
       let finalCoverPath = oldCoverPath;
-      let finalPdfUrl = oldPdfUrl;
       let finalPdfPath = oldPdfPath;
 
       if (newCoverFile) {
@@ -213,9 +210,6 @@ export default function EditPortfolioPage() {
           .from("portfolios")
           .upload(newPath, newPdfFile);
         if (uploadError) throw new Error("อัปโหลดไฟล์ PDF ไม่สำเร็จ");
-        finalPdfUrl = supabase.storage
-          .from("portfolios")
-          .getPublicUrl(uploadData.path).data.publicUrl;
         finalPdfPath = uploadData.path;
         if (oldPdfPath)
           await supabase.storage.from("portfolios").remove([oldPdfPath]);
@@ -235,7 +229,6 @@ export default function EditPortfolioPage() {
           result: result,
           cover_url: finalCoverUrl,
           cover_path: finalCoverPath,
-          pdf_url: finalPdfUrl,
           pdf_path: finalPdfPath,
         })
         .eq("id", id);
@@ -245,7 +238,6 @@ export default function EditPortfolioPage() {
       setSuccess(true);
       setOldCoverUrl(finalCoverUrl);
       setOldCoverPath(finalCoverPath);
-      setOldPdfUrl(finalPdfUrl);
       setOldPdfPath(finalPdfPath);
       setNewCoverFile(null);
       setNewPdfFile(null);
@@ -303,6 +295,19 @@ export default function EditPortfolioPage() {
         </Link>
       </div>
     );
+
+  async function openPdf() {
+    const response = await fetch(`/api/portfolio-pdf/${id}`);
+
+    if (!response.ok) {
+      alert("ไม่สามารถเปิด PDF ได้");
+      return;
+    }
+
+    const data = await response.json();
+
+    window.open(data.url, "_blank");
+  }
 
   return (
     <>
@@ -731,7 +736,7 @@ export default function EditPortfolioPage() {
                 <span className="up-label-hint">— เลือกใหม่เพื่อเปลี่ยน</span>
               </label>
               <div className="up-file-zone">
-                {oldPdfUrl && (
+                {oldPdfPath && (
                   <div className="up-current-file">
                     <div
                       style={{
@@ -764,21 +769,21 @@ export default function EditPortfolioPage() {
                         {newPdfFile ? "⚠ จะถูกแทนที่" : "ใช้ไฟล์นี้อยู่"}
                       </span>
                     </div>
-                    <a
-                      href={oldPdfUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      type="button"
+                      onClick={openPdf}
                       style={{
                         fontSize: 10,
                         color: "#C4581F",
-                        textDecoration: "none",
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
                         letterSpacing: "0.06em",
                         textTransform: "uppercase",
-                        flexShrink: 0,
                       }}
                     >
                       ดู PDF →
-                    </a>
+                    </button>
                   </div>
                 )}
                 <label

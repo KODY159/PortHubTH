@@ -134,10 +134,6 @@ export default function UploadPage() {
         .from("covers")
         .getPublicUrl(coverData.path).data.publicUrl;
 
-      const pdfUrl = supabase.storage
-        .from("portfolios")
-        .getPublicUrl(pdfData.path).data.publicUrl;
-
       const { error: insertError } = await supabase.from("portfolios").insert({
         title: cleanTitle,
         description: cleanDescription || null,
@@ -145,7 +141,6 @@ export default function UploadPage() {
         category: category || null,
 
         cover_url: coverUrl,
-        pdf_url: pdfUrl,
 
         cover_path: coverData.path,
         pdf_path: pdfData.path,

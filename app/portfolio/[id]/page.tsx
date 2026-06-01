@@ -109,6 +109,16 @@ export default async function Page({ params }: { params: { id: string } }) {
     );
   }
 
+  let pdfUrl = "";
+
+  if (data?.pdf_path) {
+    const { data: signedData } = await supabase.storage
+      .from("portfolios")
+      .createSignedUrl(data.pdf_path, 3600);
+
+    pdfUrl = signedData?.signedUrl ?? "";
+  }
+
   //JSON-LD สำหรับ Google Rich Results
   const jsonLd = {
     "@context": "https://schema.org",
@@ -140,7 +150,6 @@ export default async function Page({ params }: { params: { id: string } }) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400&display=swap');
 
@@ -215,7 +224,11 @@ export default async function Page({ params }: { params: { id: string } }) {
           transition: background 0.2s;
         }
         .pd-pdf-open:hover { background: #A8461A; }
-        .pd-pdf-iframe { width: 100%; border: none; }
+        .pd-pdf-iframe { width: 100%;
+          height: calc(100vh - 60px);
+          min-height: 900px;
+          border: none;
+          background: white; }
 
         /* ── Sidebar ── */
         .pd-sidebar { display: flex; flex-direction: column; gap: 12px; }
@@ -299,7 +312,6 @@ export default async function Page({ params }: { params: { id: string } }) {
           to   { opacity: 1; transform: translateY(0); }
         }
       `}</style>
-
       <div className="pd-root">
         {/* ── Navbar ── */}
         <nav className="pd-nav">
@@ -315,7 +327,7 @@ export default async function Page({ params }: { params: { id: string } }) {
             <div className="pd-pdf-bar">
               <span className="pd-pdf-name">{data.title}.pdf</span>
               <a
-                href={data.pdf_url}
+                href={pdfUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="pd-pdf-open"
@@ -324,9 +336,8 @@ export default async function Page({ params }: { params: { id: string } }) {
               </a>
             </div>
             <iframe
-              src={`${data.pdf_url}#toolbar=0&navpanes=0&scrollbar=1&view=FitH`}
+              src={`${pdfUrl}#toolbar=0&navpanes=0&scrollbar=1&view=FitH`}
               className="pd-pdf-iframe"
-              style={{ height: "calc(100vh - 120px)", minHeight: "85vh" }}
             />
           </div>
 
