@@ -27,7 +27,13 @@ export async function GET(
     return NextResponse.json({ error: "Cannot generate URL" }, { status: 500 });
   }
 
-  return NextResponse.json({
-    url: data.signedUrl,
-  });
+  return NextResponse.json(
+    { url: data.signedUrl },
+    {
+      headers: {
+        // cache ใน browser 55 นาที (น้อยกว่า signed URL expiry 60 นาที)
+        "Cache-Control": "private, max-age=3300",
+      },
+    },
+  );
 }

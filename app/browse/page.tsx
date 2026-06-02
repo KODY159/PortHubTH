@@ -1,6 +1,8 @@
 import createServerClient from "@/lib/supabaseServer";
 import BrowseClient from "./BrowseClient";
 
+export const revalidate = 30;
+
 type SavedItem = { portfolio_id: string };
 
 const PAGE_SIZE = 20;
@@ -33,7 +35,7 @@ export default async function BrowsePage({
     .from("portfolios")
     .select(
       `
-      id, title, description, category, cover_url, pdf_url,
+      id, title, description, category, cover_url,
       created_at, faculty, university, apply_year, apply_round, result,
       save_count, view_count, share_count,
       profiles ( name, avatar_url )

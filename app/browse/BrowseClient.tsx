@@ -9,7 +9,6 @@ type Portfolio = {
   description: string | null;
   category: string | null;
   cover_url: string | null;
-  pdf_url: string;
   created_at: string;
   faculty: string | null;
   university: string | null;

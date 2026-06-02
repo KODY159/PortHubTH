@@ -154,9 +154,13 @@ export default async function Page({ params }: { params: { id: string } }) {
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400&display=swap');
 
         .pd-root {
-          min-height: 100vh; background: #F5F0E8;
+        min-height: 100vh;
+          background: #F5F0E8;
           font-family: 'DM Sans', system-ui, sans-serif;
-          display: flex; flex-direction: column;
+          display: flex;
+          flex-direction: column;
+
+          overflow-x: hidden;
         }
 
         /* ── Navbar ── */
@@ -187,13 +191,31 @@ export default async function Page({ params }: { params: { id: string } }) {
           align-items: start ทำให้ sidebar ไม่ยืดเต็มความสูง PDF
         */
         .pd-body {
-          flex: 1; display: grid;
+        flex: 1;
+          display: grid;
           grid-template-columns: 1fr;
-          gap: 16px; padding: 16px;
-          max-width: 1280px; margin: 0 auto; width: 100%;
+          gap: 16px;
+          padding: 16px;
+          max-width: 1280px;
+          margin: 0 auto;
+          width: 100%;
+          box-sizing: border-box;
+        }
+        .pd-body > * {
+          min-width: 0;
         }
         @media (min-width: 1024px) {
           .pd-body { grid-template-columns: 1fr 320px; align-items: start; }
+          .pd-pdf-wrap {
+              position: sticky;
+
+            }
+        }
+        @media (max-width: 1023px) {
+          .pd-pdf-iframe {
+            height: 70vh;
+            min-height: 500px;
+          }
         }
 
         /*
@@ -203,11 +225,23 @@ export default async function Page({ params }: { params: { id: string } }) {
           66px = navbar height 50px + gap 16px
         */
         .pd-pdf-wrap {
-          background: #EDE8DC; border: 1px solid #D8D1C2; border-top: 3px solid #C4581F;
-          display: flex; flex-direction: column;
-          box-shadow: 0 2px 0 #E3DDD0, 0 4px 0 #D8D1C2, 0 8px 24px rgba(26,23,20,0.12);
+          background: #EDE8DC;
+          border: 1px solid #D8D1C2;
+          border-top: 3px solid #C4581F;
+          display: flex;
+          flex-direction: column;
+
+          box-shadow:
+            0 2px 0 #E3DDD0,
+            0 4px 0 #D8D1C2,
+            0 8px 24px rgba(26,23,20,0.12);
+
           overflow: hidden;
-          position: sticky; top: 66px;
+          overflow-x: hidden;
+
+          max-width: 100%;
+
+          position: relative;
         }
         .pd-pdf-bar {
           background: #2E2B26; padding: 10px 14px;
@@ -225,10 +259,15 @@ export default async function Page({ params }: { params: { id: string } }) {
         }
         .pd-pdf-open:hover { background: #A8461A; }
         .pd-pdf-iframe { width: 100%;
+          max-width: 100%;
+
           height: calc(100vh - 60px);
           min-height: 900px;
+
           border: none;
-          background: white; }
+          background: white;
+
+          display: block; }
 
         /* ── Sidebar ── */
         .pd-sidebar { display: flex; flex-direction: column; gap: 12px; }

@@ -2,6 +2,8 @@ import PortfolioCard from "@/components/PortfolioCard";
 import Link from "next/link";
 import createClient from "@/lib/supabaseServer";
 
+export const revalidate = 60;
+
 export default async function Home() {
   const supabaseServer = await createClient();
 
