@@ -102,7 +102,7 @@ export default function Navbar() {
         .p-logo:hover .p-logo-mark { background: #A8461A; }
         .p-logo-text {
           font-family: 'Playfair Display', serif;
-          font-size: 14px; font-weight: 500;
+          font-size: 15px; font-weight: 500;
           color: #F5F0E8; letter-spacing: 0.01em;
         }
         .p-logo-text em { color: #E07B3A; font-style: italic; }
@@ -110,7 +110,8 @@ export default function Navbar() {
         /* Nav links */
         .p-nav-links { display: flex; align-items: center; gap: 2px; }
         .p-nav-link {
-          font-size: 12px; color: #9A9288;
+        font-size: 12.5px;
+          font-weight: 500; color: #9A9288;
           padding: 6px 12px; text-decoration: none;
           letter-spacing: 0.06em; text-transform: uppercase;
           border: 1px solid transparent;
@@ -120,7 +121,7 @@ export default function Navbar() {
 
         .p-nav-btn {
           background: #C4581F; color: #F5F0E8;
-          font-size: 11px; font-weight: 500;
+          font-size: 12px; font-weight: 500;
           padding: 7px 16px; border: none; cursor: pointer;
           letter-spacing: 0.06em; text-transform: uppercase;
           transition: background 0.2s, transform 0.15s;
@@ -146,11 +147,12 @@ export default function Navbar() {
           font-size: 11px; font-weight: 600; color: #F5F0E8;
           font-family: 'Playfair Display', serif;
         }
-        .p-profile-name { font-size: 11px; color: #D3D1C7; max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .p-profile-name { font-size: 12px; font-weight: 500; color: #D3D1C7; max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
         /* Logout */
         .p-logout {
-          font-size: 11px; color: #6B6560;
+          font-size: 12px;
+          font-weight: 500; color: #6B6560;
           padding: 6px 10px; background: none; border: none; cursor: pointer;
           letter-spacing: 0.05em; text-transform: uppercase;
           transition: color 0.2s;
@@ -161,7 +163,8 @@ export default function Navbar() {
         /* Saved link */
         .p-saved {
           display: flex; align-items: center; gap: 6px;
-          font-size: 11px; color: #9A9288;
+          font-size: 12px;
+          font-weight: 500; color: #9A9288;
           padding: 6px 10px; text-decoration: none;
           letter-spacing: 0.05em; text-transform: uppercase;
           transition: color 0.2s;
@@ -170,7 +173,8 @@ export default function Navbar() {
 
         /* Auth buttons */
         .p-login {
-          font-size: 11px; color: #D3D1C7;
+          font-size: 12px;
+          font-weight: 500; color: #D3D1C7;
           padding: 6px 14px;
           border: 1px solid #4A4640;
           text-decoration: none; letter-spacing: 0.05em; text-transform: uppercase;
@@ -197,7 +201,7 @@ export default function Navbar() {
           display: flex; flex-direction: column; gap: 4px;
         }
         .p-mobile-link {
-          font-size: 13px; color: #9A9288;
+          font-size: 14px; color: #9A9288;
           padding: 10px 12px; text-decoration: none;
           border: 1px solid transparent;
           letter-spacing: 0.05em; text-transform: uppercase;
@@ -209,14 +213,14 @@ export default function Navbar() {
         .p-mobile-btn {
           background: #C4581F; color: #F5F0E8;
           text-align: center; padding: 11px;
-          font-size: 12px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase;
+          font-size: 13px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase;
           border: none; cursor: pointer; text-decoration: none; display: block;
           transition: background 0.2s;
           font-family: 'DM Sans', sans-serif;
         }
         .p-mobile-btn:hover { background: #A8461A; }
         .p-mobile-logout {
-          font-size: 12px; color: #6B6560; background: none; border: none; cursor: pointer;
+          font-size: 13px; color: #6B6560; background: none; border: none; cursor: pointer;
           text-align: left; padding: 10px 12px; letter-spacing: 0.05em; text-transform: uppercase;
           transition: color 0.2s; font-family: 'DM Sans', sans-serif; width: 100%;
         }

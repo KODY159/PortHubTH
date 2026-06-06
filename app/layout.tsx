@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
-import { Plus_Jakarta_Sans } from "next/font/google";
+import { Sarabun } from "next/font/google";
 import { Playfair_Display } from "next/font/google";
 
-const jakarta = Plus_Jakarta_Sans({
-  subsets: ["latin"],
-  variable: "--font-jakarta",
+const sarabun = Sarabun({
+  subsets: ["thai", "latin"], // ← สำคัญ ต้องใส่ "thai"
+  weight: ["300", "400", "500", "600"],
+  variable: "--font-sarabun",
 });
 
 const playfair = Playfair_Display({
@@ -49,7 +50,7 @@ export default function RootLayout({
   };
 
   return (
-    <html lang="th" className={`${jakarta.variable} ${playfair.variable}`}>
+    <html lang="th" className={`${sarabun.variable} ${playfair.variable}`}>
       <body>
         <script
           type="application/ld+json"

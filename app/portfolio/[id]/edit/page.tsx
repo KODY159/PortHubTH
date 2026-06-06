@@ -163,8 +163,8 @@ export default function EditPortfolioPage() {
       applyYear: applyYear ? parseInt(applyYear) : undefined,
       applyRound: applyRound || undefined,
       result: result || undefined,
-      newCoverFile,
-      newPdfFile,
+      coverFile: newCoverFile,
+      pdfFile: newPdfFile,
     });
 
     if (!SCMresult.success) {

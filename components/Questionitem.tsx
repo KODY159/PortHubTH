@@ -191,8 +191,9 @@ export default function QuestionItem({
           flex-shrink: 0; border: 1.5px solid #D8D1C2;
         }
         .qi-meta { flex: 1; min-width: 0; }
-        .qi-name { font-size: 11px; font-weight: 500; color: #2E2B26; font-family: 'DM Sans', sans-serif; }
-        .qi-date { font-size: 9px; color: #9A9288; font-family: 'DM Sans', sans-serif; }
+        .qi-name { font-size: 13px; font-weight: 500; color: #2E2B26; font-family: 'DM Sans', sans-serif; }
+        .qi-date { font-size: 11px;
+          color: #7B746B; font-family: 'DM Sans', sans-serif; }
         .qi-badges { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
         .qi-badge-answered {
           font-size: 8px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase;
@@ -203,7 +204,8 @@ export default function QuestionItem({
         /* question text */
         .qi-text {
           padding: 10px 14px 0 52px; /* 52px = 28px avatar + 10px gap + 14px padding */
-          font-size: 12.5px; color: #1A1714; line-height: 1.7;
+          font-size: 14px;
+          line-height: 1.9; color: #1A1714;
           font-family: 'DM Sans', sans-serif; word-break: break-word;
         }
 
@@ -213,7 +215,7 @@ export default function QuestionItem({
         .qi-upvote {
           display: flex; align-items: center; gap: 5px;
           background: none; border: 1px solid #D8D1C2; padding: 4px 10px;
-          cursor: pointer; font-size: 10px; font-family: 'DM Mono', monospace; color: #6B6560;
+          cursor: pointer; font-size: 11px; font-family: 'DM Mono', monospace; color: #6B6560;
           transition: all 0.18s;
         }
         .qi-upvote:hover:not(:disabled) { border-color: #C4581F; color: #C4581F; }
@@ -223,7 +225,7 @@ export default function QuestionItem({
         .qi-toggle {
           display: flex; align-items: center; gap: 5px;
           background: none; border: 1px solid #D8D1C2; padding: 4px 10px;
-          cursor: pointer; font-size: 10px; font-family: 'DM Sans', sans-serif; color: #6B6560;
+          cursor: pointer; font-size: 11px; font-family: 'DM Sans', sans-serif; color: #6B6560;
           letter-spacing: 0.04em; transition: all 0.18s;
         }
         .qi-toggle:hover { border-color: #C8BFA8; color: #1A1714; }
@@ -245,14 +247,14 @@ export default function QuestionItem({
         /* answer form */
         .qi-aform { display: flex; flex-direction: column; gap: 6px; }
         .qi-owner-lbl {
-          font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase;
+          font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
           color: #C4581F; font-weight: 500; font-family: 'DM Sans', sans-serif;
         }
         .qi-atextarea {
           width: 100%; resize: none;
           background: #F5F0E8; border: 1px solid #D8D1C2; border-bottom: 2px solid #C8BFA8;
-          padding: 8px 10px; font-size: 11.5px; color: #1A1714;
-          outline: none; font-family: 'DM Sans', sans-serif; line-height: 1.6;
+          padding: 8px 10px; font-size: 13px; color: #1A1714;
+          outline: none; font-family: 'DM Sans', sans-serif; line-height: 1.8;
           transition: border-color 0.2s;
         }
         .qi-atextarea:focus { border-color: #C4581F; border-bottom-color: #C4581F; }
@@ -272,7 +274,7 @@ export default function QuestionItem({
           background: #F5E8E8; border: 1px solid #DBA8A5;
           padding: 5px 8px; font-family: 'DM Sans', sans-serif;
         }
-        .qi-alogin { font-size: 10px; color: #9A9288; font-family: 'DM Sans', sans-serif; text-align: center; padding: 6px; }
+        .qi-alogin { font-size: 12px; color: #9A9288; font-family: 'DM Sans', sans-serif; text-align: center; padding: 6px; }
         .qi-alogin a { color: #C4581F; text-decoration: none; }
 
         @keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }

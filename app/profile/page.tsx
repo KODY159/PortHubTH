@@ -105,7 +105,7 @@ export default function ProfilePage() {
       }
     }
 
-    const result = ProfileSchema.safeParse({ cleanName, cleanBio });
+    const result = ProfileSchema.safeParse({ name: cleanName, bio: cleanBio });
 
     if (!result.success) {
       setError(result.error.issues[0].message);

@@ -1,11 +1,11 @@
 import PortfolioCard from "@/components/PortfolioCard";
 import Link from "next/link";
-import createClient from "@/lib/supabaseServer";
+import createServerClient from "@/lib/supabaseServer";
 
 export const revalidate = 60;
 
 export default async function Home() {
-  const supabaseServer = await createClient();
+  const supabaseServer = await createServerClient();
 
   const { data, error } = await supabaseServer
     .from("portfolios")
@@ -62,7 +62,7 @@ export default async function Home() {
 
         .ph-label {
           display: inline-flex; align-items: center; gap: 10px;
-          font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase;
+          font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase;
           color: #C4581F; margin-bottom: 20px;
           font-family: 'DM Sans', sans-serif;
         }
@@ -78,14 +78,17 @@ export default async function Home() {
         .ph-title em { color: #C4581F; font-style: italic; }
 
         .ph-sub {
-          font-size: 13px; color: #6B6560; max-width: 360px;
-          margin: 0 auto 32px; line-height: 1.8;
+          font-size: 15px;
+          line-height: 1.9;
+          color: #6B6560;
+          max-width: 360px;
+          margin: 0 auto 32px;
         }
 
         .ph-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
         .ph-btn-p {
           background: #1A1714; color: #F5F0E8;
-          font-size: 11px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase;
+          font-size: 12px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase;
           padding: 12px 28px; border: 2px solid #1A1714;
           cursor: pointer; text-decoration: none;
           transition: background 0.2s, transform 0.2s;
@@ -95,7 +98,7 @@ export default async function Home() {
         .ph-btn-p:hover { background: #2E2B26; transform: translateY(-2px); }
         .ph-btn-s {
           background: transparent; color: #4A4640;
-          font-size: 11px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase;
+          font-size: 12px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase;
           padding: 12px 28px; border: 2px solid #C8BFA8;
           cursor: pointer; text-decoration: none;
           transition: border-color 0.2s, color 0.2s, transform 0.2s;
@@ -119,11 +122,11 @@ export default async function Home() {
         .ph-stat:hover { background: #E3DDD0; }
         .ph-stat-n {
           font-family: 'Playfair Display', serif;
-          font-size: 26px; color: #C4581F;
+          font-size: 28px; color: #C4581F;
           line-height: 1; margin-bottom: 4px;
         }
         .ph-stat-l {
-          font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase;
+          font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
           color: #9A9288;
         }
 
@@ -133,7 +136,7 @@ export default async function Home() {
           padding: 28px 20px 12px;
         }
         .ph-sec-lbl {
-          font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase;
+          font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase;
           color: #9A9288; white-space: nowrap;
           font-family: 'DM Sans', sans-serif;
         }
@@ -154,7 +157,7 @@ export default async function Home() {
         /* ── CTA ── */
         .ph-cta { display: flex; justify-content: center; padding-bottom: 60px; }
         .ph-cta-btn {
-          font-size: 11px; color: #6B6560;
+          font-size: 12px; color: #6B6560;
           border: 1px solid #D8D1C2; padding: 10px 28px;
           text-decoration: none; letter-spacing: 0.08em; text-transform: uppercase;
           transition: all 0.2s; font-family: 'DM Sans', sans-serif;
@@ -235,7 +238,6 @@ export default async function Home() {
               key={item.id}
               id={item.id}
               title={item.title}
-              // pdf_url={item.pdf_url}
               cover_url={item.cover_url}
               category={item.category}
               userProfile={item.profiles?.avatar_url}

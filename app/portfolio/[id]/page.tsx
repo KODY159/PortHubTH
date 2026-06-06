@@ -6,6 +6,7 @@ import ShareButtons from "@/components/ShareButtonsWrapper";
 import StoryCardClient from "@/components/StoryCardClient";
 import QASection from "@/components/QASection";
 import type { Metadata } from "next";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 const CATEGORY_COLORS: Record<
   string,
@@ -508,7 +509,9 @@ export default async function Page({ params }: { params: { id: string } }) {
             <ShareButtons title={data.title} portfolioId={data.id} />
 
             {/*QASection*/}
-            <QASection portfolioId={data.id} ownerId={data.user_id} />
+            <ErrorBoundary context="QASection">
+              <QASection portfolioId={data.id} ownerId={data.user_id} />
+            </ErrorBoundary>
           </div>
         </div>
       </div>

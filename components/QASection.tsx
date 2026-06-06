@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabaseClient";
 import QuestionItem from "./Questionitem";
 import { sanitize } from "@/lib/sanitize";
 import { QuestionSchema } from "@/lib/schemas";
+import * as Sentry from "@sentry/nextjs";
 
 export type Answer = {
   id: string;
@@ -116,6 +117,16 @@ export default function QASection({ portfolioId, ownerId }: Props) {
 
       if (error) {
         console.log("fetchQuestions error:", error);
+        Sentry.captureException(error, {
+          tags: {
+            section: "QASection",
+            action: "fetchQuestions",
+          },
+          extra: {
+            portfolioId,
+            pageNum,
+          },
+        });
         setLoading(false);
         return;
       }
@@ -210,7 +221,6 @@ export default function QASection({ portfolioId, ownerId }: Props) {
 
     if (!result.success) {
       // result.error.errors เป็น array ของทุก error
-      // เอา error แรกมาแสดง
       const firstError = result.error.issues[0];
       setSubmitError(firstError.message);
       return;
@@ -227,7 +237,7 @@ export default function QASection({ portfolioId, ownerId }: Props) {
       .insert({
         portfolio_id: portfolioId,
         user_id: userId,
-        question,
+        question: question,
       })
       .select(
         `
@@ -239,7 +249,16 @@ export default function QASection({ portfolioId, ownerId }: Props) {
       .single();
 
     if (error || !inserted) {
-      console.error("[QA:submitQuestion]", error);
+      Sentry.captureException(error, {
+        tags: {
+          section: "QASection",
+          action: "submitQuestion",
+        },
+        extra: {
+          portfolioId,
+          userId,
+        },
+      });
       setSubmitError("ส่งคำถามไม่สำเร็จ กรุณาลองใหม่");
       setSubmitting(false);
       return;
@@ -270,6 +289,16 @@ export default function QASection({ portfolioId, ownerId }: Props) {
 
     if (error) {
       console.error("deleteQuestion:", error.message);
+      Sentry.captureException(error, {
+        tags: {
+          section: "QASection",
+          action: "deleteQuestion",
+        },
+        extra: {
+          questionId,
+          userId,
+        },
+      });
       return false; //fail
     }
 
@@ -337,13 +366,13 @@ export default function QASection({ portfolioId, ownerId }: Props) {
           .qa-hd { display: flex; align-items: center; gap: 10px; }
           .qa-dot { width: 5px; height: 5px; background: #C4581F; flex-shrink: 0; }
           .qa-lbl {
-            font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase;
+            font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase;
             color: #9A9288; font-weight: 500; white-space: nowrap;
             font-family: 'DM Sans', sans-serif;
           }
           .qa-line { flex: 1; height: 1px; background: #E3DDD0; }
           .qa-count {
-            font-size: 9px; color: #C4581F;
+            font-size: 11px; color: #C4581F;
             background: #F5EDDF; border: 1px solid #D4AA78;
             padding: 1px 8px; font-family: 'DM Sans', sans-serif;
           }
@@ -351,21 +380,22 @@ export default function QASection({ portfolioId, ownerId }: Props) {
           /* ask form */
           .qa-form { background: #F5F0E8; border: 1px solid #D8D1C2; padding: 14px; }
           .qa-form-lbl {
-            display: block; font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase;
+            display: block; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
             color: #6B6560; font-weight: 500; margin-bottom: 8px;
             font-family: 'DM Sans', sans-serif;
           }
           .qa-textarea {
             width: 100%; resize: none;
             background: #EDE8DC; border: 1px solid #D8D1C2; border-bottom: 2px solid #C8BFA8;
-            padding: 9px 11px; font-size: 12px; color: #1A1714;
-            outline: none; font-family: 'DM Sans', sans-serif; line-height: 1.6;
+            padding: 9px 11px; font-size: 14px;
+            line-height: 1.8; color: #1A1714;
+            outline: none; font-family: 'DM Sans', sans-serif;
             transition: border-color 0.2s, background 0.2s;
           }
           .qa-textarea:focus { border-color: #C4581F; border-bottom-color: #C4581F; background: #F5F0E8; }
           .qa-textarea::placeholder { color: #9A9288; }
           .qa-form-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; }
-          .qa-chars { font-size: 10px; color: #C8BFA8; font-family: 'DM Mono', monospace; }
+          .qa-chars { font-size: 11px; color: #C8BFA8; font-family: 'DM Mono', monospace; }
           .qa-chars.warn { color: #C4581F; }
           .qa-send {
             background: #1A1714; color: #F5F0E8; border: none; padding: 7px 16px;
@@ -379,7 +409,7 @@ export default function QASection({ portfolioId, ownerId }: Props) {
           /* login prompt */
           .qa-login {
             background: #EDE8DC; border: 1px dashed #C8BFA8; padding: 14px;
-            text-align: center; font-size: 11px; color: #9A9288;
+            text-align: center; font-size: 13px; line-height: 1.8; color: #9A9288;
             font-family: 'DM Sans', sans-serif;
           }
           .qa-login a { color: #C4581F; text-decoration: none; font-weight: 500; }
@@ -400,7 +430,7 @@ export default function QASection({ portfolioId, ownerId }: Props) {
           /* empty */
           .qa-empty {
             background: #EDE8DC; border: 1px dashed #D8D1C2; padding: 28px;
-            text-align: center; font-size: 11px; color: #9A9288;
+            text-align: center; font-size: 13px; color: #9A9288;
             font-family: 'DM Sans', sans-serif; line-height: 1.8;
           }
 

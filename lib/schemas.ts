@@ -47,7 +47,7 @@ export const AnswerSchema = z.object({
 // ─── Profile schemas ──────────────────────────────────────
 
 export const ProfileSchema = z.object({
-  name: thaiOrEnglishText("ชื่อ", 100),
+  name: thaiOrEnglishText("ชื่อ", 50),
   bio: z.string().max(500, "Bio ต้องไม่เกิน 500 ตัวอักษร").optional(),
 });
 

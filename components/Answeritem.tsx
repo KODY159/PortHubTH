@@ -56,7 +56,7 @@ export default function AnswerItem({ answer, currentUserId, onDelete }: Props) {
         }
         .ai-owner-badge {
           display: inline-flex; align-items: center; gap: 5px;
-          font-size: 8px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+          font-size: 9px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
           background: #F5EDDF; color: #C4581F; border: 1px solid #D4AA78;
           padding: 2px 8px; margin-bottom: 8px;
           font-family: 'DM Sans', sans-serif;
@@ -69,10 +69,13 @@ export default function AnswerItem({ answer, currentUserId, onDelete }: Props) {
           display: flex; align-items: center; justify-content: center;
           font-family: 'Playfair Display', serif; font-size: 8px; font-weight: 600;
         }
-        .ai-name { font-size: 10px; font-weight: 500; color: #2E2B26; font-family: 'DM Sans', sans-serif; }
-        .ai-date { font-size: 9px; color: #9A9288; font-family: 'DM Sans', sans-serif; margin-left: auto; }
+        .ai-name { font-size: 12px; font-weight: 500; color: #2E2B26; font-family: 'DM Sans', sans-serif; }
+        .ai-date { font-size: 11px;
+          color: #7B746B; font-family: 'DM Sans', sans-serif; margin-left: auto; }
         .ai-text {
-          font-size: 12px; color: #2E2B26; line-height: 1.75;
+          font-size: 14px;
+          line-height: 1.9;
+          color: #2E2B26;
           font-family: 'DM Sans', sans-serif;
           word-break: break-word; white-space: pre-wrap; margin: 0;
         }
