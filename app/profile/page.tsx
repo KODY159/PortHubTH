@@ -13,23 +13,17 @@ type Portfolio = {
   title: string;
   description: string | null;
   category: string | null;
-
   cover_url: string;
   pdf_url: string;
-
   cover_path: string;
   pdf_path: string;
-
   user_id: string;
   uploaded_by: string | null;
-
   faculty: string | null;
   university: string | null;
-
   apply_year: number | null;
   apply_round: string | null;
   result: string | null;
-
   created_at: string;
 };
 
@@ -91,9 +85,7 @@ export default function ProfilePage() {
   async function handleSave() {
     const cleanName = sanitize.name(name);
     const cleanBio = sanitize.bio(bio);
-
     if (!user) return;
-
     if (avatarFile) {
       if (!avatarFile.type.startsWith("image/")) {
         setError("กรุณาแนบไฟล์รูปภาพเท่านั้น");
@@ -104,15 +96,11 @@ export default function ProfilePage() {
         return;
       }
     }
-
     const result = ProfileSchema.safeParse({ name: cleanName, bio: cleanBio });
-
     if (!result.success) {
       setError(result.error.issues[0].message);
       return;
     }
-
-    // validate avatar file ถ้ามีการเปลี่ยน
     if (avatarFile) {
       const fileResult = AvatarFileSchema.safeParse(avatarFile);
       if (!fileResult.success) {
@@ -120,27 +108,18 @@ export default function ProfilePage() {
         return;
       }
     }
-
     setLoading(true);
     setError("");
     setSuccess(false);
-
     try {
       let newAvatarUrl = avatarUrl;
-
       if (avatarFile) {
         const path = `${user.id}/avatar.png`;
-
-        // overwrite old file
         const { error: uploadError } = await supabase.storage
           .from("avatars")
           .upload(path, avatarFile, { upsert: true });
-
         if (uploadError) throw new Error("อัปโหลดรูปไม่สำเร็จ");
-
-        // url pulling
         const { data } = supabase.storage.from("avatars").getPublicUrl(path);
-
         newAvatarUrl = `${data.publicUrl}?t=${Date.now()}`;
       }
       const { error: upsertError } = await supabase.from("profiles").upsert({
@@ -157,9 +136,7 @@ export default function ProfilePage() {
       if (err instanceof Error) {
         console.error("[Profile:save]", err);
         setError(err.message);
-      } else {
-        setError("เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ");
-      }
+      } else setError("เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ");
     } finally {
       setLoading(false);
     }
@@ -168,34 +145,20 @@ export default function ProfilePage() {
   async function handleDelete(id: string) {
     const confirmed = confirm("ลบพอร์ตโฟลิโอนี้?");
     if (!confirmed) return;
-
     try {
       const { data: portfolio, error: fetchError } = await supabase
         .from("portfolios")
         .select("cover_path, pdf_path")
         .eq("id", id)
         .single();
-
-      if (fetchError || !portfolio) {
-        throw new Error("ดึงข้อมูลไม่สำเร็จ");
-      }
-
-      if (!user) {
-        throw new Error("Unauthorized");
-      }
-
-      // delete that portfolio table first
+      if (fetchError || !portfolio) throw new Error("ดึงข้อมูลไม่สำเร็จ");
+      if (!user) throw new Error("Unauthorized");
       const { error: deleteError } = await supabase
         .from("portfolios")
         .delete()
         .eq("id", id)
         .eq("user_id", user.id);
-
-      if (deleteError) {
-        throw new Error("ลบข้อมูลไม่สำเร็จ");
-      }
-
-      //  best effort file delete in storage
+      if (deleteError) throw new Error("ลบข้อมูลไม่สำเร็จ");
       await Promise.allSettled([
         portfolio.cover_path
           ? supabase.storage.from("covers").remove([portfolio.cover_path])
@@ -204,14 +167,10 @@ export default function ProfilePage() {
           ? supabase.storage.from("portfolios").remove([portfolio.pdf_path])
           : null,
       ]);
-
       setPortfolios((prev) => prev.filter((p) => p.id !== id));
     } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ");
-      }
+      if (err instanceof Error) setError(err.message);
+      else setError("เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ");
     }
   }
 
@@ -221,108 +180,119 @@ export default function ProfilePage() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@300;400;500&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Sarabun:wght@300;400;500;600&display=swap');
 
-        .pp-root { min-height: 100vh; background: #F5F0E8; font-family: 'DM Sans', system-ui, sans-serif; color: #1A1714; }
+        .pp-root {
+          min-height: 100vh; background: #F5F0E8;
+          font-family: 'Sarabun', system-ui, sans-serif;
+          color: #1A1714; font-size: 16px; line-height: 1.85;
+        }
 
         /* ── Navbar ── */
         .pp-nav {
           background: #1A1714; border-bottom: 2px solid #C4581F;
-          padding: 0 20px; height: 50px;
+          padding: 0 20px; height: 54px;
           display: flex; align-items: center; justify-content: space-between;
           position: sticky; top: 0; z-index: 50;
         }
         .pp-nav-logo { display: flex; align-items: center; gap: 10px; }
         .pp-nav-mark {
-          width: 28px; height: 28px; background: #C4581F;
+          width: 30px; height: 30px; background: #C4581F;
           display: flex; align-items: center; justify-content: center;
-          font-family: 'Playfair Display', serif; font-size: 14px; color: #F5F0E8;
+          font-family: 'Playfair Display', serif; font-size: 15px; color: #F5F0E8;
         }
-        .pp-nav-brand { font-family: 'Playfair Display', serif; font-size: 13px; color: #F5F0E8; }
+        .pp-nav-brand { font-family: 'Playfair Display', serif; font-size: 14px; color: #F5F0E8; }
         .pp-nav-back {
           display: flex; align-items: center; gap: 6px;
-          font-size: 10px; color: #9A9288; background: none; border: none; cursor: pointer;
-          letter-spacing: 0.08em; text-transform: uppercase; transition: color 0.2s;
-          padding: 6px 10px;
+          font-size: 13px; color: #9A9288; background: none; border: none; cursor: pointer;
+          letter-spacing: 0.04em; transition: color 0.2s;
+          padding: 6px 10px; font-weight: 500; font-family: 'Sarabun', sans-serif;
         }
         .pp-nav-back:hover { color: #C4581F; }
 
         /* ── Content ── */
-        .pp-content { max-width: 680px; margin: 0 auto; padding: 28px 20px 60px; display: flex; flex-direction: column; gap: 16px; }
+        .pp-content {
+          max-width: 700px; margin: 0 auto;
+          padding: 32px 20px 64px;
+          display: flex; flex-direction: column; gap: 18px;
+        }
 
         /* ── Card base ── */
         .pp-card {
-          background: #F5F0E8;
-          border: 1px solid #D8D1C2;
-          border-top: 3px solid #C4581F;
-          padding: 22px;
+          background: #F5F0E8; border: 1px solid #D8D1C2; border-top: 3px solid #C4581F;
+          padding: 26px;
           box-shadow: 0 2px 0 #E3DDD0, 0 4px 16px rgba(26,23,20,0.08);
           animation: fadeUp 0.4s ease both;
         }
+        /* Card title: 20px Playfair */
         .pp-card-title {
           font-family: 'Playfair Display', serif;
-          font-size: 18px; font-weight: 500; color: #1A1714;
+          font-size: 20px; font-weight: 500; color: #1A1714;
           margin-bottom: 4px; letter-spacing: -0.01em;
         }
-        .pp-card-sub { font-size: 11px; color: #9A9288; margin-bottom: 20px; }
-        .pp-divider { height: 1px; background: #E3DDD0; margin: 14px 0; }
+        /* Card sub: 14px */
+        .pp-card-sub { font-size: 14px; color: #9A9288; margin-bottom: 22px; }
+        .pp-divider { height: 1px; background: #E3DDD0; margin: 16px 0; }
 
         /* ── Avatar upload ── */
-        .pp-av-row { display: flex; align-items: center; gap: 16px; }
+        .pp-av-row { display: flex; align-items: center; gap: 18px; }
         .pp-av-circle {
-          width: 64px; height: 64px;
-          background: #1A1714;
+          width: 68px; height: 68px; background: #1A1714;
           display: flex; align-items: center; justify-content: center;
-          font-family: 'Playfair Display', serif; font-size: 26px; color: #F5F0E8;
+          font-family: 'Playfair Display', serif; font-size: 28px; color: #F5F0E8;
           flex-shrink: 0; border: 3px solid #C4581F;
         }
         .pp-av-upload {
-          display: flex; flex-direction: column; align-items: center; gap: 6px;
+          display: flex; flex-direction: column; align-items: center; gap: 7px;
           border: 1px dashed #C8BFA8; background: #EDE8DC;
-          padding: 12px 20px; cursor: pointer;
+          padding: 14px 22px; cursor: pointer;
           transition: border-color 0.2s, background 0.2s; flex: 1;
         }
         .pp-av-upload:hover { border-color: #C4581F; background: #F5EDDF; }
-        .pp-av-upload-txt { font-size: 10px; color: #9A9288; text-align: center; }
+        /* Upload text: 13px */
+        .pp-av-upload-txt { font-size: 13px; color: #9A9288; text-align: center; line-height: 1.5; }
 
         /* ── Form fields ── */
+        /* Label: 12px */
         .pp-label {
-          display: block; font-size: 9px; font-weight: 500;
-          letter-spacing: 0.14em; text-transform: uppercase; color: #6B6560;
-          margin-bottom: 5px;
+          display: block; font-size: 12px; font-weight: 600;
+          letter-spacing: 0.1em; text-transform: uppercase; color: #6B6560;
+          margin-bottom: 6px;
         }
+        /* Input: 15px */
         .pp-input {
-          width: 100%;
-          background: #EDE8DC; border: 1px solid #D8D1C2;
+          width: 100%; background: #EDE8DC; border: 1px solid #D8D1C2;
           border-bottom: 2px solid #C8BFA8;
-          padding: 10px 12px; font-size: 13px; color: #1A1714;
+          padding: 12px 14px; font-size: 15px; color: #1A1714;
           outline: none; transition: border-color 0.2s, background 0.2s;
-          font-family: 'DM Sans', sans-serif; margin-bottom: 12px;
+          font-family: 'Sarabun', sans-serif; margin-bottom: 14px;
+          line-height: 1.5;
         }
         .pp-input:focus { border-color: #C4581F; border-bottom-color: #C4581F; background: #F5F0E8; }
         .pp-input::placeholder { color: #9A9288; }
+        /* Textarea: 15px */
         .pp-textarea {
-          width: 100%; resize: none;
-          background: #EDE8DC; border: 1px solid #D8D1C2;
+          width: 100%; resize: none; background: #EDE8DC; border: 1px solid #D8D1C2;
           border-bottom: 2px solid #C8BFA8;
-          padding: 10px 12px; font-size: 13px; color: #1A1714;
+          padding: 12px 14px; font-size: 15px; color: #1A1714;
           outline: none; transition: border-color 0.2s, background 0.2s;
-          font-family: 'DM Sans', sans-serif; margin-bottom: 12px;
-          min-height: 80px; line-height: 1.6;
+          font-family: 'Sarabun', sans-serif; margin-bottom: 14px;
+          min-height: 90px; line-height: 1.75;
         }
         .pp-textarea:focus { border-color: #C4581F; border-bottom-color: #C4581F; background: #F5F0E8; }
 
         /* ── Alerts ── */
-        .pp-error { font-size: 11px; color: #8B1A14; background: #F5E8E8; border: 1px solid #DBA8A5; padding: 8px 12px; margin-bottom: 10px; }
-        .pp-success { font-size: 11px; color: #1A5C2E; background: #E8F5EE; border: 1px solid #8ECEBF; padding: 8px 12px; margin-bottom: 10px; }
+        /* Error/success: 13px */
+        .pp-error { font-size: 13px; color: #8B1A14; background: #F5E8E8; border: 1px solid #DBA8A5; padding: 10px 14px; margin-bottom: 12px; line-height: 1.6; }
+        .pp-success { font-size: 13px; color: #1A5C2E; background: #E8F5EE; border: 1px solid #8ECEBF; padding: 10px 14px; margin-bottom: 12px; }
 
-        /* ── Save button ── */
+        /* ── Save button: 13px ── */
         .pp-save {
           width: 100%; background: #1A1714; color: #F5F0E8;
-          border: none; padding: 12px; font-size: 11px; font-weight: 500;
-          letter-spacing: 0.1em; text-transform: uppercase;
+          border: none; padding: 14px; font-size: 13px; font-weight: 600;
+          letter-spacing: 0.08em; text-transform: uppercase;
           cursor: pointer; transition: background 0.2s, transform 0.15s;
-          font-family: 'DM Sans', sans-serif;
+          font-family: 'Sarabun', sans-serif;
         }
         .pp-save:hover { background: #C4581F; transform: translateY(-1px); }
         .pp-save:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
@@ -330,69 +300,74 @@ export default function ProfilePage() {
         /* ── Saved shortcut ── */
         .pp-saved-link {
           display: flex; align-items: center; justify-content: space-between;
-          padding: 16px 20px;
+          padding: 18px 22px;
           background: #F5F0E8; border: 1px solid #D8D1C2;
-          text-decoration: none;
-          transition: border-color 0.2s, background 0.2s;
+          text-decoration: none; transition: border-color 0.2s, background 0.2s;
           animation: fadeUp 0.4s ease 0.1s both;
         }
         .pp-saved-link:hover { border-color: #C4581F; background: #F5EDDF; }
         .pp-saved-link-icon {
-          width: 36px; height: 36px; background: #1A1714;
+          width: 38px; height: 38px; background: #1A1714;
           display: flex; align-items: center; justify-content: center; flex-shrink: 0;
         }
-        .pp-saved-link-label { font-size: 13px; color: #2E2B26; font-weight: 500; }
-        .pp-saved-link-sub { font-size: 10px; color: #9A9288; margin-top: 2px; }
+        /* Saved label: 15px */
+        .pp-saved-link-label { font-size: 15px; color: #2E2B26; font-weight: 600; }
+        /* Saved sub: 13px */
+        .pp-saved-link-sub { font-size: 13px; color: #9A9288; margin-top: 2px; }
+        /* Saved count badge: 12px */
         .pp-saved-link-count {
-          font-size: 10px; font-weight: 500; letter-spacing: 0.06em;
-          background: #EDE8DC; color: #4A4640; padding: 3px 10px;
-          border: 1px solid #D8D1C2;
-          margin-left: auto; margin-right: 12px;
+          font-size: 12px; font-weight: 500; letter-spacing: 0.04em;
+          background: #EDE8DC; color: #4A4640; padding: 4px 12px;
+          border: 1px solid #D8D1C2; margin-left: auto; margin-right: 14px;
         }
-        .pp-arrow { color: #9A9288; font-size: 14px; transition: color 0.2s; }
+        .pp-arrow { color: #9A9288; font-size: 16px; transition: color 0.2s; }
         .pp-saved-link:hover .pp-arrow { color: #C4581F; }
 
-        /* ── My Portfolios section ── */
+        /* ── My Portfolios ── */
         .pp-my-card {
-          background: #F5F0E8; border: 1px solid #D8D1C2;
-          border-top: 3px solid #C4581F; padding: 20px;
+          background: #F5F0E8; border: 1px solid #D8D1C2; border-top: 3px solid #C4581F;
+          padding: 22px;
           box-shadow: 0 2px 0 #E3DDD0, 0 4px 16px rgba(26,23,20,0.08);
           animation: fadeUp 0.4s ease 0.2s both;
         }
-        .pp-my-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+        .pp-my-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
         .pp-my-title-row { display: flex; align-items: center; gap: 12px; }
+        /* Section label: 11px */
         .pp-my-title-label {
-          font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase;
-          color: #9A9288; font-weight: 500;
+          font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+          color: #9A9288; font-weight: 600;
         }
         .pp-my-title-line { width: 24px; height: 1px; background: #D8D1C2; }
+        /* Count badge: 12px */
         .pp-port-count {
-          font-size: 10px; color: #C4581F;
+          font-size: 12px; color: #C4581F;
           background: #F5EDDF; border: 1px solid #D4AA78;
-          padding: 2px 10px; letter-spacing: 0.05em;
+          padding: 3px 12px; letter-spacing: 0.04em;
         }
+        /* Upload btn: 13px */
         .pp-upload-btn {
-          font-size: 10px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase;
+          font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
           background: #1A1714; color: #F5F0E8;
-          padding: 6px 14px; border: none; cursor: pointer;
+          padding: 8px 16px; border: none; cursor: pointer;
           text-decoration: none; transition: background 0.2s;
-          font-family: 'DM Sans', sans-serif; display: inline-block;
+          font-family: 'Sarabun', sans-serif; display: inline-block;
         }
         .pp-upload-btn:hover { background: #C4581F; }
 
         /* Empty state */
         .pp-empty {
-          display: flex; flex-direction: column; align-items: center; gap: 10px;
-          padding: 36px; border: 1px dashed #D8D1C2; background: #EDE8DC;
+          display: flex; flex-direction: column; align-items: center; gap: 12px;
+          padding: 38px; border: 1px dashed #D8D1C2; background: #EDE8DC;
         }
         .pp-empty-icon {
-          width: 40px; height: 40px; background: #F5F0E8; border: 1px solid #D8D1C2;
+          width: 42px; height: 42px; background: #F5F0E8; border: 1px solid #D8D1C2;
           display: flex; align-items: center; justify-content: center;
         }
-        .pp-empty-txt { font-size: 12px; color: #9A9288; }
+        /* Empty text: 14px */
+        .pp-empty-txt { font-size: 14px; color: #9A9288; }
 
         /* Portfolio grid */
-        .pp-port-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        .pp-port-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
         @media (min-width: 480px) { .pp-port-grid { grid-template-columns: repeat(3, 1fr); } }
 
         .pp-port-item {
@@ -404,21 +379,20 @@ export default function ProfilePage() {
         .pp-port-thumb { position: relative; width: 100%; aspect-ratio: 1/1.414; }
         .pp-port-letter {
           width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
-          font-family: 'Playfair Display', serif; font-size: 32px; font-weight: 500; color: #C4581F;
+          font-family: 'Playfair Display', serif; font-size: 34px; font-weight: 500; color: #C4581F;
           background: linear-gradient(135deg, #EDE8DC, #C8BFA8);
         }
         .pp-port-fade { position: absolute; bottom: 0; left: 0; right: 0; height: 32px; background: linear-gradient(to top, #EDE8DC, transparent); pointer-events: none; }
 
-        /* Action buttons overlay */
+        /* Action buttons */
         .pp-port-actions {
           position: absolute; top: 6px; right: 6px;
-          display: flex; gap: 4px;
-          opacity: 0.4; transition: opacity 0.2s;
+          display: flex; gap: 5px; opacity: 0.4; transition: opacity 0.2s;
         }
         .pp-port-item:hover .pp-port-actions { opacity: 1; }
         .pp-port-act {
-          width: 28px; height: 28px;
-          background: rgba(245,240,232,0.9); border: 1px solid #D8D1C2;
+          width: 30px; height: 30px;
+          background: rgba(245,240,232,0.92); border: 1px solid #D8D1C2;
           display: flex; align-items: center; justify-content: center;
           cursor: pointer; transition: all 0.2s; text-decoration: none;
         }
@@ -426,9 +400,11 @@ export default function ProfilePage() {
         .pp-port-act.del:hover { background: #F5E8E8; border-color: #DBA8A5; }
 
         /* Port info */
-        .pp-port-info { padding: 8px 10px 10px; }
-        .pp-port-name { font-size: 11px; font-weight: 500; color: #2E2B26; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .pp-port-date { font-size: 9px; color: #9A9288; margin-top: 2px; letter-spacing: 0.03em; }
+        .pp-port-info { padding: 10px 12px 12px; }
+        /* Port name: 13px */
+        .pp-port-name { font-size: 13px; font-weight: 600; color: #2E2B26; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        /* Port date: 12px */
+        .pp-port-date { font-size: 12px; color: #9A9288; margin-top: 3px; letter-spacing: 0.02em; }
 
         @keyframes fadeUp {
           from { opacity: 0; transform: translateY(14px); }
@@ -454,25 +430,24 @@ export default function ProfilePage() {
             <div className="pp-card-title">Profile settings</div>
             <div className="pp-card-sub">{user?.email}</div>
 
-            {/* Avatar */}
             <label className="pp-label">รูปโปรไฟล์</label>
-            <div className="pp-av-row" style={{ marginBottom: 16 }}>
+            <div className="pp-av-row" style={{ marginBottom: 18 }}>
               {avatarUrl ? (
                 <Image
                   src={avatarUrl}
                   alt="avatar"
-                  width={64}
-                  height={64}
+                  width={68}
+                  height={68}
                   className="object-cover"
-                  style={{ width: 64, height: 64, border: "3px solid #C4581F" }}
+                  style={{ width: 68, height: 68, border: "3px solid #C4581F" }}
                 />
               ) : (
                 <div className="pp-av-circle">{avatarLetter}</div>
               )}
               <label className="pp-av-upload">
                 <svg
-                  width="18"
-                  height="18"
+                  width="20"
+                  height="20"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="#9A9288"
@@ -498,7 +473,6 @@ export default function ProfilePage() {
 
             <div className="pp-divider" />
 
-            {/* Name */}
             <label className="pp-label">ชื่อ</label>
             <input
               className="pp-input"
@@ -507,7 +481,6 @@ export default function ProfilePage() {
               onChange={(e) => setName(e.target.value)}
             />
 
-            {/* Bio */}
             <label className="pp-label">Bio</label>
             <textarea
               className="pp-textarea"
@@ -529,8 +502,8 @@ export default function ProfilePage() {
           <Link href="/saved" className="pp-saved-link">
             <div className="pp-saved-link-icon">
               <svg
-                width="14"
-                height="16"
+                width="16"
+                height="18"
                 viewBox="0 0 24 24"
                 fill="#F5F0E8"
                 stroke="#F5F0E8"
@@ -541,7 +514,7 @@ export default function ProfilePage() {
                 <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
               </svg>
             </div>
-            <div style={{ marginLeft: 12 }}>
+            <div style={{ marginLeft: 14 }}>
               <div className="pp-saved-link-label">Saved portfolios</div>
               <div className="pp-saved-link-sub">พอร์ตที่คุณบันทึกไว้</div>
             </div>
@@ -570,8 +543,8 @@ export default function ProfilePage() {
               <div className="pp-empty">
                 <div className="pp-empty-icon">
                   <svg
-                    width="16"
-                    height="16"
+                    width="18"
+                    height="18"
                     fill="none"
                     stroke="#9A9288"
                     strokeWidth="1.5"
@@ -604,7 +577,6 @@ export default function ProfilePage() {
                         </div>
                       )}
                       <div className="pp-port-fade" />
-                      {/* Action buttons */}
                       <div className="pp-port-actions">
                         <Link
                           href={`/portfolio/${item.id}/edit`}
@@ -612,8 +584,8 @@ export default function ProfilePage() {
                           onClick={(e) => e.stopPropagation()}
                         >
                           <svg
-                            width="11"
-                            height="11"
+                            width="12"
+                            height="12"
                             viewBox="0 0 12 12"
                             fill="none"
                             stroke="#4A4640"
@@ -632,8 +604,8 @@ export default function ProfilePage() {
                           }}
                         >
                           <svg
-                            width="11"
-                            height="11"
+                            width="12"
+                            height="12"
                             viewBox="0 0 12 12"
                             fill="none"
                             stroke="#8B1A14"

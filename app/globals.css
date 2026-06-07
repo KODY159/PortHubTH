@@ -155,7 +155,7 @@
     html {
         @apply font-sans;
         font-size: 16px;
-
+        line-height: 1.85;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
         text-rendering: optimizeLegibility;
@@ -166,19 +166,37 @@
         font-size: 16px;
         line-height: 1.75;
     }
-}
+
+    input, textarea, select, button {
+        font-family: inherit;
+        font-size: inherit;
+    }
 
 /* เพิ่มตรงนี้ */
 @layer utilities {
     .heading-font {
-        font-family: var(--font-heading);
-    }
+            font-family: var(--font-heading);
+        }
 
-    .body-font {
-        font-family: var(--font-sans);
-    }
+        .body-font {
+            font-family: var(--font-sans);
+        }
 
-    .mono-font {
-        font-family: var(--font-mono);
-    }
+        .mono-font {
+            font-family: var(--font-mono);
+        }
+
+        /* Thai-safe label — ใช้กับ ALL CAPS label เล็กๆ */
+        .label-xs {
+            font-size: var(--text-xs);
+            letter-spacing: var(--ls-label);
+            text-transform: uppercase;
+            line-height: 1.5;
+        }
+
+        /* Body text สำหรับภาษาไทย */
+        .thai-body {
+            font-size: var(--text-base);
+            line-height: var(--lh-normal);
+        }
 }

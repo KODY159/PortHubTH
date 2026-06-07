@@ -62,8 +62,8 @@ function hashStr(s: string) {
 function BookmarkIcon({ filled }: { filled: boolean }) {
   return (
     <svg
-      width="13"
-      height="13"
+      width="14"
+      height="14"
       viewBox="0 0 24 24"
       fill={filled ? "#C4581F" : "none"}
       stroke={filled ? "#C4581F" : "rgba(26,23,20,0.5)"}
@@ -159,8 +159,8 @@ export default function PortfolioCard({
           position: "absolute",
           top: 8,
           right: 8,
-          width: 30,
-          height: 30,
+          width: 34,
+          height: 34,
           background: saved
             ? "rgba(245,240,232,0.95)"
             : "rgba(245,240,232,0.80)",
@@ -184,16 +184,19 @@ export default function PortfolioCard({
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;1,400&family=DM+Sans:wght@400;500&family=DM+Mono:wght@400&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;1,400&family=Sarabun:wght@400;500&family=DM+Mono:wght@400&display=swap');
 
+        /* ── Card shell ── */
         .p-card {
           border: 1px solid #E3DDD0;
           background: #F5F0E8;
           overflow: hidden;
           display: flex; flex-direction: column; height: 100%;
-          transition: transform 0.28s cubic-bezier(0.34,1.56,0.64,1),
-                      box-shadow 0.25s ease, border-color 0.2s;
-          font-family: 'DM Sans', system-ui, sans-serif;
+          transition:
+            transform 0.28s cubic-bezier(0.34,1.56,0.64,1),
+            box-shadow 0.25s ease,
+            border-color 0.2s;
+          font-family: 'Sarabun', system-ui, sans-serif;
           position: relative;
         }
         .p-card::before {
@@ -203,73 +206,96 @@ export default function PortfolioCard({
           transform: scaleX(0); transform-origin: left;
           transition: transform 0.3s ease; z-index: 1;
         }
-        .p-card:hover { transform: translateY(-5px) rotate(-0.2deg); border-color: #C4581F; box-shadow: 0 12px 32px rgba(26,23,20,0.14), 0 2px 0 #C4581F; }
+        .p-card:hover {
+          transform: translateY(-5px) rotate(-0.2deg);
+          border-color: #C4581F;
+          box-shadow: 0 12px 32px rgba(26,23,20,0.14), 0 2px 0 #C4581F;
+        }
         .p-card:hover::before { transform: scaleX(1); }
 
+        /* ── Thumbnail ── */
         .p-card-thumb { position: relative; width: 100%; aspect-ratio: 1/1.414; overflow: hidden; }
         .p-card-thumb img { transition: transform 0.5s ease; }
         .p-card:hover .p-card-thumb img { transform: scale(1.04); }
 
-        .p-card-body { padding: 12px 14px 10px; display: flex; flex-direction: column; gap: 8px; }
+        /* ── Body ── */
+        .p-card-body { padding: 14px 16px 10px; display: flex; flex-direction: column; gap: 10px; }
 
+        /* Title: 15px — ชัดเจน อ่านง่าย */
         .p-card-title {
           font-family: 'Playfair Display', serif;
-          font-size: 13px; font-weight: 500;
-          color: #2E2B26; line-height: 1.4;
-          display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+          font-size: 15px; font-weight: 500;
+          color: #2E2B26; line-height: 1.45;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
         }
 
-        .p-badge-row { display: flex; flex-wrap: wrap; gap: 4px; }
+        /* Badges: 11px — เล็กพอที่จะเป็น label แต่อ่านได้ */
+        .p-badge-row { display: flex; flex-wrap: wrap; gap: 5px; }
         .p-badge {
-          font-size: 9px; font-weight: 500;
-          padding: 2px 8px; letter-spacing: 0.04em;
-          border: 1px solid; font-family: 'DM Sans', sans-serif;
+          font-size: 11px; font-weight: 500;
+          padding: 3px 10px; letter-spacing: 0.02em;
+          border: 1px solid;
+          font-family: 'Sarabun', sans-serif;
           white-space: nowrap; transition: filter 0.15s;
+          line-height: 1.5;
         }
         .p-badge:hover { filter: brightness(0.95); }
 
+        /* Result badge บน thumbnail */
         .p-result-badge {
           display: inline-flex; align-items: center; gap: 5px;
-          font-size: 9px; font-weight: 600;
-          padding: 3px 9px; border: 1px solid;
-          letter-spacing: 0.04em; font-family: 'DM Sans', sans-serif;
+          font-size: 11px; font-weight: 600;
+          padding: 4px 10px; border: 1px solid;
+          letter-spacing: 0.02em;
+          font-family: 'Sarabun', sans-serif;
+          line-height: 1.4;
         }
-        .p-result-dot { width: 5px; height: 5px; border-radius: 50%; }
+        .p-result-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
 
-        .p-user-row { display: flex; align-items: center; gap: 6px; }
+        /* User row */
+        .p-user-row { display: flex; align-items: center; gap: 7px; }
         .p-user-avatar {
-          width: 18px; height: 18px; border-radius: 50%;
+          width: 22px; height: 22px; border-radius: 50%;
           background: #C4581F; color: #F5F0E8;
           display: flex; align-items: center; justify-content: center;
-          font-size: 8px; font-family: 'Playfair Display', serif; font-weight: 600;
+          font-size: 10px; font-family: 'Playfair Display', serif; font-weight: 600;
           flex-shrink: 0;
         }
-        .p-username { font-size: 10px; color: #9A9288; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        /* Username: 13px — อ่านออกชัด */
+        .p-username {
+          font-size: 13px; color: #9A9288;
+          overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+          line-height: 1.4;
+        }
 
-        .p-divider { height: 1px; background: #E3DDD0; margin: 0 14px; }
+        .p-divider { height: 1px; background: #E3DDD0; margin: 0 16px; }
 
+        /* Stats row */
         .p-stats-row {
           display: flex; flex-direction: row; align-items: center;
           justify-content: space-between;
-          padding: 9px 14px 12px;
+          padding: 10px 16px 14px;
         }
-        .p-stats-group {
-          display: flex; flex-direction: row; align-items: center; gap: 14px;
-        }
-        .p-stat-item {
-          display: flex; flex-direction: row; align-items: center; gap: 6px;
-        }
+        .p-stats-group { display: flex; align-items: center; gap: 16px; }
+        .p-stat-item { display: flex; align-items: center; gap: 6px; }
+
+        /* Stat numbers: 12px DM Mono */
         .p-stat-num {
           font-family: 'DM Mono', monospace;
-          font-size: 11px; font-weight: 400;
+          font-size: 12px; font-weight: 400;
           color: #4A4640; letter-spacing: 0.02em; line-height: 1;
         }
+
+        /* View link: 11px */
         .p-view-link {
-          font-size: 10px; font-weight: 500; color: #C4581F;
-          letter-spacing: 0.08em; text-transform: uppercase;
+          font-size: 11px; font-weight: 600; color: #C4581F;
+          letter-spacing: 0.06em; text-transform: uppercase;
           transition: letter-spacing 0.2s; flex-shrink: 0;
         }
-        .p-card:hover .p-view-link { letter-spacing: 0.13em; }
+        .p-card:hover .p-view-link { letter-spacing: 0.12em; }
 
         .p-thumb-fade {
           position: absolute; bottom: 0; left: 0; right: 0; height: 40px;
@@ -324,7 +350,7 @@ export default function PortfolioCard({
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                fontSize: 48,
+                fontSize: 52,
                 fontFamily: "'Playfair Display',serif",
                 color: THUMB_LETTERS[idx],
                 fontWeight: 500,
@@ -406,10 +432,10 @@ export default function PortfolioCard({
                 <Image
                   src={userProfile}
                   alt="avatar"
-                  width={18}
-                  height={18}
+                  width={22}
+                  height={22}
                   className="rounded-full object-cover"
-                  style={{ width: 18, height: 18, borderRadius: "50%" }}
+                  style={{ width: 22, height: 22, borderRadius: "50%" }}
                 />
               ) : (
                 <div className="p-user-avatar">
@@ -420,16 +446,15 @@ export default function PortfolioCard({
             </div>
           </div>
 
-          {/* Divider */}
           <div className="p-divider" />
 
-          {/* Stats row */}
+          {/* Stats */}
           <div className="p-stats-row">
             <div className="p-stats-group">
               <div className="p-stat-item">
                 <svg
-                  width="13"
-                  height="13"
+                  width="14"
+                  height="14"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="#C4581F"
@@ -440,11 +465,10 @@ export default function PortfolioCard({
                 </svg>
                 <span className="p-stat-num">{formatCount(view_count)}</span>
               </div>
-
               <div className="p-stat-item">
                 <svg
-                  width="13"
-                  height="13"
+                  width="14"
+                  height="14"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="#C4581F"
@@ -454,11 +478,10 @@ export default function PortfolioCard({
                 </svg>
                 <span className="p-stat-num">{formatCount(save_count)}</span>
               </div>
-
               <div className="p-stat-item">
                 <svg
-                  width="13"
-                  height="13"
+                  width="14"
+                  height="14"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="#C4581F"

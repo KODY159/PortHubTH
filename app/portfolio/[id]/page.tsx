@@ -44,7 +44,6 @@ type Props = { params: Promise<{ id: string }> };
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   const supabase = await createServerClient();
-
   const { data } = await supabase
     .from("portfolios")
     .select("title, description, cover_url, category, university, faculty")
@@ -85,7 +84,6 @@ export default async function Page({ params }: { params: { id: string } }) {
   const { id } = await params;
   const supabase = await createServerClient();
 
-  // fetch portfolio + join profiles
   const { data, error } = await supabase
     .from("portfolios")
     .select(`*, profiles(name, avatar_url)`)
@@ -102,7 +100,8 @@ export default async function Page({ params }: { params: { id: string } }) {
           alignItems: "center",
           justifyContent: "center",
           color: "#9A9288",
-          fontFamily: "'DM Sans',sans-serif",
+          fontFamily: "'Sarabun',sans-serif",
+          fontSize: "16px",
         }}
       >
         Portfolio not found
@@ -111,16 +110,13 @@ export default async function Page({ params }: { params: { id: string } }) {
   }
 
   let pdfUrl = "";
-
   if (data?.pdf_path) {
     const { data: signedData } = await supabase.storage
       .from("portfolios")
       .createSignedUrl(data.pdf_path, 3600);
-
     pdfUrl = signedData?.signedUrl ?? "";
   }
 
-  //JSON-LD สำหรับ Google Rich Results
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "CreativeWork",
@@ -137,7 +133,6 @@ export default async function Page({ params }: { params: { id: string } }) {
     url: `https://portbaseth.com/portfolio/${id}`,
   };
 
-  //view count
   await supabase.rpc("increment_view_count", { row_id: id });
 
   const tc = data.category
@@ -152,183 +147,141 @@ export default async function Page({ params }: { params: { id: string } }) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Sarabun:wght@300;400;500;600&family=DM+Mono:wght@400&display=swap');
 
+        /* ── Root ── */
         .pd-root {
-        min-height: 100vh;
-          background: #F5F0E8;
-          font-family: 'DM Sans', system-ui, sans-serif;
-          display: flex;
-          flex-direction: column;
-
-          overflow-x: hidden;
+          min-height: 100vh; background: #F5F0E8;
+          font-family: 'Sarabun', system-ui, sans-serif;
+          font-size: 16px; line-height: 1.85;
+          display: flex; flex-direction: column; overflow-x: hidden;
         }
 
         /* ── Navbar ── */
         .pd-nav {
           background: #1A1714; border-bottom: 2px solid #C4581F;
-          padding: 0 20px; height: 50px;
+          padding: 0 20px; height: 54px;
           display: flex; align-items: center; justify-content: space-between;
           position: sticky; top: 0; z-index: 10;
         }
+        /* Nav title: 15px Playfair */
         .pd-nav-title {
           font-family: 'Playfair Display', serif;
-          font-size: 14px; font-weight: 500; color: #F5F0E8;
+          font-size: 15px; font-weight: 500; color: #F5F0E8;
           overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
           max-width: 60%;
         }
+        /* Back link: 13px */
         .pd-nav-back {
           display: flex; align-items: center; gap: 6px;
-          font-size: 10px; color: #9A9288;
-          text-decoration: none; letter-spacing: 0.08em; text-transform: uppercase;
-          transition: color 0.2s;
+          font-size: 13px; color: #9A9288;
+          text-decoration: none; letter-spacing: 0.04em;
+          transition: color 0.2s; font-weight: 500;
         }
         .pd-nav-back:hover { color: #C4581F; }
 
-        /*
-          ── Body layout ──
-          mobile  → 1 column: PDF ก่อน sidebar ตาม
-          desktop → 2 column: PDF ซ้าย | sidebar 320px ขวา
-          align-items: start ทำให้ sidebar ไม่ยืดเต็มความสูง PDF
-        */
+        /* ── Body layout ── */
         .pd-body {
-        flex: 1;
-          display: grid;
+          flex: 1; display: grid;
           grid-template-columns: 1fr;
-          gap: 16px;
-          padding: 16px;
-          max-width: 1280px;
-          margin: 0 auto;
-          width: 100%;
-          box-sizing: border-box;
+          gap: 18px; padding: 18px;
+          max-width: 1280px; margin: 0 auto;
+          width: 100%; box-sizing: border-box;
         }
-        .pd-body > * {
-          min-width: 0;
-        }
+        .pd-body > * { min-width: 0; }
         @media (min-width: 1024px) {
-          .pd-body { grid-template-columns: 1fr 320px; align-items: start; }
-          .pd-pdf-wrap {
-              position: sticky;
-
-            }
+          .pd-body { grid-template-columns: 1fr 340px; align-items: start; }
         }
         @media (max-width: 1023px) {
-          .pd-pdf-iframe {
-            height: 70vh;
-            min-height: 500px;
-          }
+          .pd-pdf-iframe { height: 70vh; min-height: 500px; }
         }
 
-        /*
-          ── PDF viewer ──
-          position: sticky top: 66px ทำให้ PDF ลอยค้างอยู่
-          ขณะที่ sidebar ด้านขวา scroll ลงได้อิสระ (desktop only)
-          66px = navbar height 50px + gap 16px
-        */
+        /* ── PDF viewer ── */
         .pd-pdf-wrap {
-          background: #EDE8DC;
-          border: 1px solid #D8D1C2;
-          border-top: 3px solid #C4581F;
-          display: flex;
-          flex-direction: column;
-
-          box-shadow:
-            0 2px 0 #E3DDD0,
-            0 4px 0 #D8D1C2,
-            0 8px 24px rgba(26,23,20,0.12);
-
-          overflow: hidden;
-          overflow-x: hidden;
-
-          max-width: 100%;
-
-          position: relative;
+          background: #EDE8DC; border: 1px solid #D8D1C2; border-top: 3px solid #C4581F;
+          display: flex; flex-direction: column;
+          box-shadow: 0 2px 0 #E3DDD0, 0 4px 0 #D8D1C2, 0 8px 24px rgba(26,23,20,0.12);
+          overflow: hidden; max-width: 100%; position: relative;
         }
         .pd-pdf-bar {
-          background: #2E2B26; padding: 10px 14px;
+          background: #2E2B26; padding: 11px 16px;
           display: flex; align-items: center; justify-content: space-between;
           border-bottom: 1px solid #1A1714;
         }
-        .pd-pdf-name { font-family: 'DM Mono', monospace; font-size: 10px; color: #9A9288; }
+        /* PDF filename: 12px DM Mono */
+        .pd-pdf-name { font-family: 'DM Mono', monospace; font-size: 12px; color: #9A9288; }
+        /* Open button: 12px */
         .pd-pdf-open {
-          display: flex; align-items: center; gap: 5px;
-          font-size: 10px; font-weight: 500;
+          display: flex; align-items: center; gap: 6px;
+          font-size: 12px; font-weight: 600;
           background: #C4581F; color: #F5F0E8;
-          padding: 5px 12px; text-decoration: none;
-          letter-spacing: 0.05em; text-transform: uppercase;
+          padding: 6px 14px; text-decoration: none;
+          letter-spacing: 0.04em; text-transform: uppercase;
           transition: background 0.2s;
         }
         .pd-pdf-open:hover { background: #A8461A; }
-        .pd-pdf-iframe { width: 100%;
-          max-width: 100%;
-
-          height: calc(100vh - 60px);
-          min-height: 900px;
-
-          border: none;
-          background: white;
-
-          display: block; }
+        .pd-pdf-iframe {
+          width: 100%; max-width: 100%;
+          height: calc(100vh - 60px); min-height: 900px;
+          border: none; background: white; display: block;
+        }
 
         /* ── Sidebar ── */
-        .pd-sidebar { display: flex; flex-direction: column; gap: 12px; }
+        .pd-sidebar { display: flex; flex-direction: column; gap: 14px; }
 
-        /*
-          ── Info card ──
-          border-top: 3px solid #C4581F เป็น accent สีส้มเข้มด้านบน
-          เหมือนกันทุก card ใน site เพื่อ visual consistency
-        */
+        /* ── Info card ── */
         .pd-info {
           background: #F5F0E8; border: 1px solid #D8D1C2; border-top: 3px solid #C4581F;
-          padding: 18px;
+          padding: 20px;
           box-shadow: 0 2px 0 #E3DDD0, 0 4px 12px rgba(26,23,20,0.08);
           animation: fadeUp 0.4s ease both;
         }
-
-        .pd-av-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+        .pd-av-row { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
         .pd-av {
-          width: 38px; height: 38px; background: #1A1714; color: #F5F0E8;
+          width: 42px; height: 42px; background: #1A1714; color: #F5F0E8;
           display: flex; align-items: center; justify-content: center;
-          font-family: 'Playfair Display', serif; font-size: 16px; font-weight: 500;
+          font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 500;
           flex-shrink: 0; border: 2px solid #C4581F;
         }
-        .pd-av-name { font-size: 13px; font-weight: 500; color: #2E2B26; }
-        .pd-av-date { font-size: 9px; color: #9A9288; letter-spacing: 0.04em; margin-top: 2px; }
+        /* Author name: 15px */
+        .pd-av-name { font-size: 15px; font-weight: 600; color: #2E2B26; }
+        /* Date: 13px */
+        .pd-av-date { font-size: 13px; color: #9A9288; margin-top: 2px; }
 
-        .pd-divider { height: 1px; background: #E3DDD0; margin: 12px 0; }
+        .pd-divider { height: 1px; background: #E3DDD0; margin: 14px 0; }
 
+        /* Portfolio title: 18px Playfair */
         .pd-port-title {
           font-family: 'Playfair Display', serif;
-          font-size: 16px; font-weight: 500; color: #1A1714;
-          line-height: 1.35; margin-bottom: 8px;
+          font-size: 18px; font-weight: 500; color: #1A1714;
+          line-height: 1.4; margin-bottom: 10px;
         }
-        .pd-desc { font-size: 12px; color: #6B6560; line-height: 1.7; margin-bottom: 12px; }
+        /* Description: 15px */
+        .pd-desc { font-size: 15px; color: #6B6560; line-height: 1.85; margin-bottom: 14px; }
 
+        /* Result badge: 12px */
         .pd-result {
-          display: inline-flex; align-items: center; gap: 6px;
-          font-size: 10px; font-weight: 600; letter-spacing: 0.05em;
-          padding: 5px 12px; border: 1px solid; margin-bottom: 10px;
+          display: inline-flex; align-items: center; gap: 7px;
+          font-size: 12px; font-weight: 700; letter-spacing: 0.04em;
+          padding: 6px 14px; border: 1px solid; margin-bottom: 12px;
         }
-        .pd-result-dot { width: 6px; height: 6px; border-radius: 50%; }
+        .pd-result-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
 
-        .pd-tags { display: flex; flex-wrap: wrap; gap: 5px; }
+        /* Tags: 11px */
+        .pd-tags { display: flex; flex-wrap: wrap; gap: 6px; }
         .pd-tag {
-          font-size: 9px; font-weight: 500; letter-spacing: 0.06em;
-          padding: 3px 10px; border: 1px solid; transition: filter 0.15s;
+          font-size: 11px; font-weight: 600; letter-spacing: 0.04em;
+          padding: 4px 12px; border: 1px solid; transition: filter 0.15s;
+          line-height: 1.5;
         }
         .pd-tag:hover { filter: brightness(0.95); }
         .pd-fac { background: #F5EDDF; color: #8B4513; border-color: #D4AA78; }
         .pd-uni { background: #EDE8DC; color: #4A4640; border-color: #C8BFA8; }
 
-        /*
-          ── Apply info note card ──
-          ruled lines ทำด้วย div overlay ที่มี
-          repeating-linear-gradient แทนที่จะใช้ border-bottom บน element
-          เพราะต้องการให้เส้นต่อเนื่องข้ามทุก element ภายใน card
-        */
+        /* ── Apply info note card ── */
         .pd-note-card {
           background: #F5F0E8; border: 1px solid #D8D1C2;
-          padding: 14px 18px; position: relative; overflow: hidden;
+          padding: 16px 20px; position: relative; overflow: hidden;
           animation: fadeUp 0.5s ease 0.12s both;
         }
         .pd-note-lines {
@@ -338,31 +291,35 @@ export default async function Page({ params }: { params: { id: string } }) {
           );
           opacity: 0.5;
         }
+        /* Note label: 11px */
         .pd-note-label {
           position: relative;
-          font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase;
-          color: #C4581F; margin-bottom: 8px; font-weight: 500;
-          font-family: 'DM Sans', sans-serif;
+          font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+          color: #C4581F; margin-bottom: 10px; font-weight: 600;
+          font-family: 'Sarabun', sans-serif;
         }
-        .pd-note-val { position: relative; font-size: 12px; color: #2E2B26; line-height: 1.8; }
-        .pd-note-val span { color: #C4581F; font-weight: 500; }
+        /* Note value: 15px */
+        .pd-note-val { position: relative; font-size: 15px; color: #2E2B26; line-height: 1.85; }
+        .pd-note-val span { color: #C4581F; font-weight: 600; }
 
         @keyframes fadeUp {
           from { opacity: 0; transform: translateY(12px); }
           to   { opacity: 1; transform: translateY(0); }
         }
       `}</style>
+
       <div className="pd-root">
         {/* ── Navbar ── */}
         <nav className="pd-nav">
           <span className="pd-nav-title">{data.title}</span>
           <Link href="/" className="pd-nav-back">
-            <ArrowLeftFromLine size={12} />
+            <ArrowLeftFromLine size={13} />
             Back to feed
           </Link>
         </nav>
 
         <div className="pd-body">
+          {/* PDF Viewer */}
           <div className="pd-pdf-wrap">
             <div className="pd-pdf-bar">
               <span className="pd-pdf-name">{data.title}.pdf</span>
@@ -372,7 +329,7 @@ export default async function Page({ params }: { params: { id: string } }) {
                 rel="noopener noreferrer"
                 className="pd-pdf-open"
               >
-                Open in new tab <ArrowUpRight size={11} />
+                Open in new tab <ArrowUpRight size={12} />
               </a>
             </div>
             <iframe
@@ -381,21 +338,21 @@ export default async function Page({ params }: { params: { id: string } }) {
             />
           </div>
 
-          {/*Sidebar*/}
+          {/* Sidebar */}
           <div className="pd-sidebar">
-            {/*info card*/}
+            {/* Info card */}
             <div className="pd-info">
               <div className="pd-av-row">
                 {data.profiles?.avatar_url ? (
                   <Image
                     src={data.profiles.avatar_url}
                     alt="avatar"
-                    width={38}
-                    height={38}
+                    width={42}
+                    height={42}
                     className="object-cover"
                     style={{
-                      width: 38,
-                      height: 38,
+                      width: 42,
+                      height: 42,
                       border: "2px solid #C4581F",
                     }}
                     loading="eager"
@@ -478,7 +435,7 @@ export default async function Page({ params }: { params: { id: string } }) {
               </div>
             </div>
 
-            {/*Story card*/}
+            {/* Story card */}
             {data.story && (
               <StoryCardClient
                 story={data.story}
@@ -487,7 +444,7 @@ export default async function Page({ params }: { params: { id: string } }) {
               />
             )}
 
-            {/*Apply info note card*/}
+            {/* Apply info note */}
             {(data.apply_year || data.apply_round) && (
               <div className="pd-note-card">
                 <div className="pd-note-lines" />
@@ -505,10 +462,10 @@ export default async function Page({ params }: { params: { id: string } }) {
               </div>
             )}
 
-            {/*Share buttons*/}
+            {/* Share buttons */}
             <ShareButtons title={data.title} portfolioId={data.id} />
 
-            {/*QASection*/}
+            {/* QA Section */}
             <ErrorBoundary context="QASection">
               <QASection portfolioId={data.id} ownerId={data.user_id} />
             </ErrorBoundary>

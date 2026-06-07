@@ -63,8 +63,6 @@ export default function BrowseClient({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const savedSet = new Set(savedIds);
-
-  // Local state สำหรับ search input (debounce ก่อน push URL)
   const [searchInput, setSearchInput] = useState(currentSearch);
 
   function pushParams(overrides: Record<string, string>) {
@@ -73,7 +71,7 @@ export default function BrowseClient({
       search: currentSearch,
       result: currentResult,
       category: currentCategory,
-      page: "0", // reset page when filter change
+      page: "0",
       ...overrides,
     };
     Object.entries(merged).forEach(([k, v]) => {
@@ -84,19 +82,14 @@ export default function BrowseClient({
     });
   }
 
-  // Debounce search FOR TEXT SEARCH
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   function handleSearchChange(value: string) {
     setSearchInput(value);
-
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
     timeoutRef.current = setTimeout(() => {
       pushParams({ search: value, page: "0" });
     }, 400);
-  } //bitch ass error nigga
+  }
 
   const hasFilter =
     currentSearch ||
@@ -111,56 +104,137 @@ export default function BrowseClient({
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;1,400&family=DM+Sans:wght@400;500&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;1,400&family=Sarabun:wght@400;500;600&display=swap');
 
-        .pb-root { min-height: 100vh; background: #F5F0E8; font-family: 'DM Sans', system-ui, sans-serif; color: #1A1714; }
+        .pb-root {
+          min-height: 100vh;
+          background: #F5F0E8;
+          font-family: 'Sarabun', system-ui, sans-serif;
+          color: #1A1714;
+          font-size: 16px;
+          line-height: 1.85;
+        }
 
-        .pb-header { background: #1A1714; border-bottom: 2px solid #C4581F; padding: 20px 24px 18px; position: relative; overflow: hidden; }
-        .pb-header::after { content: ''; position: absolute; inset: 0; background-image: repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(255,255,255,0.02) 39px, rgba(255,255,255,0.02) 40px); pointer-events: none; }
-        .pb-header-title { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 500; color: #F5F0E8; letter-spacing: -0.01em; margin-bottom: 4px; }
-        .pb-header-count { font-size: 11px; color: #9A9288; letter-spacing: 0.04em; }
+        /* ── Header ── */
+        .pb-header {
+          background: #1A1714; border-bottom: 2px solid #C4581F;
+          padding: 22px 24px 20px; position: relative; overflow: hidden;
+        }
+        .pb-header::after {
+          content: ''; position: absolute; inset: 0;
+          background-image: repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(255,255,255,0.02) 39px, rgba(255,255,255,0.02) 40px);
+          pointer-events: none;
+        }
+        /* Header title: 22px Playfair */
+        .pb-header-title {
+          font-family: 'Playfair Display', serif;
+          font-size: 22px; font-weight: 500; color: #F5F0E8;
+          letter-spacing: -0.01em; margin-bottom: 4px;
+        }
+        /* Count text: 14px */
+        .pb-header-count { font-size: 14px; color: #9A9288; letter-spacing: 0.02em; }
 
-        .pb-search-wrap { padding: 16px 20px 0; }
-        .pb-search { display: flex; align-items: center; gap: 10px; background: #EDE8DC; border: 1px solid #E3DDD0; padding: 10px 14px; transition: border-color 0.2s; }
+        /* ── Search ── */
+        .pb-search-wrap { padding: 18px 24px 0; }
+        .pb-search {
+          display: flex; align-items: center; gap: 10px;
+          background: #EDE8DC; border: 1px solid #E3DDD0;
+          padding: 12px 16px; transition: border-color 0.2s;
+        }
         .pb-search:focus-within { border-color: #C4581F; }
-        .pb-search input { background: none; border: none; outline: none; font-size: 13px; color: #1A1714; flex: 1; font-family: 'DM Sans', sans-serif; }
+        /* Search input: 15px */
+        .pb-search input {
+          background: none; border: none; outline: none;
+          font-size: 15px; color: #1A1714; flex: 1;
+          font-family: 'Sarabun', sans-serif;
+          line-height: 1.6;
+        }
         .pb-search input::placeholder { color: #9A9288; }
-        .pb-clear { background: none; border: none; cursor: pointer; color: #9A9288; font-size: 14px; line-height: 1; transition: color 0.2s; padding: 0; }
+        .pb-clear {
+          background: none; border: none; cursor: pointer;
+          color: #9A9288; font-size: 15px; line-height: 1;
+          transition: color 0.2s; padding: 0;
+        }
         .pb-clear:hover { color: #C4581F; }
 
-        .pb-filters { padding: 12px 20px 0; display: flex; flex-direction: column; gap: 8px; }
-        .pb-filter-row { display: flex; align-items: center; gap: 6px; overflow-x: auto; }
-        .pb-filter-label { font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: #9A9288; white-space: nowrap; }
-        .pb-pill { font-size: 9px; font-weight: 500; letter-spacing: 0.06em; padding: 4px 12px; border: 1px solid #E3DDD0; background: #F5F0E8; color: #6B6560; cursor: pointer; white-space: nowrap; transition: all 0.2s; font-family: 'DM Sans', sans-serif; }
+        /* ── Filters ── */
+        .pb-filters { padding: 14px 24px 0; display: flex; flex-direction: column; gap: 10px; }
+        .pb-filter-row { display: flex; align-items: center; gap: 8px; overflow-x: auto; }
+        /* Filter label: 12px minimum */
+        .pb-filter-label {
+          font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase;
+          color: #9A9288; white-space: nowrap; font-weight: 600;
+        }
+        /* Pills: 12px — อ่านออกชัด */
+        .pb-pill {
+          font-size: 12px; font-weight: 500; letter-spacing: 0.03em;
+          padding: 6px 14px; border: 1px solid #E3DDD0;
+          background: #F5F0E8; color: #6B6560;
+          cursor: pointer; white-space: nowrap;
+          transition: all 0.2s; font-family: 'Sarabun', sans-serif;
+          line-height: 1.4;
+        }
         .pb-pill:hover { border-color: #C8BFA8; color: #1A1714; }
         .pb-pill.active { background: #1A1714; color: #F5F0E8; border-color: #1A1714; }
         .pb-pill.result-pass { background: #E8F5EE; color: #1A5C2E; border-color: #8ECEBF; }
         .pb-pill.result-fail { background: #F5E8E8; color: #8B1A14; border-color: #DBA8A5; }
         .pb-pill.result-wait { background: #F5F0DC; color: #8B6914; border-color: #D4C068; }
 
-        .pb-clear-all { background: none; border: none; cursor: pointer; font-size: 10px; color: #C4581F; letter-spacing: 0.05em; text-transform: uppercase; padding: 0; font-family: 'DM Sans', sans-serif; transition: color 0.2s; align-self: flex-start; }
+        /* Clear all: 12px */
+        .pb-clear-all {
+          background: none; border: none; cursor: pointer;
+          font-size: 12px; color: #C4581F; letter-spacing: 0.03em;
+          padding: 0; font-family: 'Sarabun', sans-serif;
+          font-weight: 500; transition: color 0.2s; align-self: flex-start;
+        }
         .pb-clear-all:hover { color: #A8461A; }
 
-        .pb-grid { display: grid; gap: 14px; padding: 16px 20px 24px; grid-template-columns: repeat(2, 1fr); }
+        /* ── Grid ── */
+        .pb-grid {
+          display: grid; gap: 16px;
+          padding: 18px 24px 28px;
+          grid-template-columns: repeat(2, 1fr);
+        }
         @media (min-width: 768px)  { .pb-grid { grid-template-columns: repeat(3, 1fr); } }
         @media (min-width: 1024px) { .pb-grid { grid-template-columns: repeat(4, 1fr); } }
 
-        /* Loading overlay */
         .pb-loading { opacity: 0.5; pointer-events: none; transition: opacity 0.2s; }
 
-        /* Pagination */
-        .pb-pagination { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 16px 20px 48px; }
-        .pb-page-btn { font-size: 11px; font-weight: 500; padding: 7px 16px; border: 1px solid #D8D1C2; background: #F5F0E8; color: #4A4640; cursor: pointer; transition: all 0.2s; font-family: 'DM Sans', sans-serif; letter-spacing: 0.04em; text-transform: uppercase; }
+        /* ── Pagination ── */
+        .pb-pagination {
+          display: flex; align-items: center; justify-content: center;
+          gap: 10px; padding: 18px 24px 52px;
+        }
+        /* Pagination buttons: 13px */
+        .pb-page-btn {
+          font-size: 13px; font-weight: 500;
+          padding: 9px 18px; border: 1px solid #D8D1C2;
+          background: #F5F0E8; color: #4A4640;
+          cursor: pointer; transition: all 0.2s;
+          font-family: 'Sarabun', sans-serif; letter-spacing: 0.02em;
+        }
         .pb-page-btn:hover { border-color: #C4581F; color: #C4581F; }
         .pb-page-btn:disabled { opacity: 0.35; cursor: not-allowed; }
         .pb-page-btn.active { background: #1A1714; color: #F5F0E8; border-color: #1A1714; }
-        .pb-page-info { font-size: 11px; color: #9A9288; letter-spacing: 0.04em; padding: 0 8px; }
+        /* Page info: 13px */
+        .pb-page-info { font-size: 13px; color: #9A9288; letter-spacing: 0.02em; padding: 0 8px; }
 
-        .pb-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 80px 20px; gap: 12px; }
-        .pb-empty-icon { width: 48px; height: 48px; border: 1px solid #E3DDD0; background: #EDE8DC; display: flex; align-items: center; justify-content: center; }
-        .pb-empty-text { font-size: 13px; color: #9A9288; }
+        /* ── Empty state ── */
+        .pb-empty {
+          display: flex; flex-direction: column; align-items: center;
+          justify-content: center; padding: 80px 20px; gap: 14px;
+        }
+        .pb-empty-icon {
+          width: 52px; height: 52px; border: 1px solid #E3DDD0;
+          background: #EDE8DC; display: flex; align-items: center; justify-content: center;
+        }
+        /* Empty text: 15px */
+        .pb-empty-text { font-size: 15px; color: #9A9288; }
 
-        @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeUp {
+          from { opacity: 0; transform: translateY(16px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
       `}</style>
 
       <div className="pb-root">
@@ -175,7 +249,7 @@ export default function BrowseClient({
         {/* Search */}
         <div className="pb-search-wrap">
           <div className="pb-search">
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <circle
                 cx="6.5"
                 cy="6.5"
@@ -211,7 +285,6 @@ export default function BrowseClient({
 
         {/* Filters */}
         <div className="pb-filters">
-          {/* ผลการสมัคร */}
           <div className="pb-filter-row">
             <span className="pb-filter-label">ผล:</span>
             {RESULT_OPTIONS.map((r) => {
@@ -229,7 +302,6 @@ export default function BrowseClient({
             })}
           </div>
 
-          {/* Category */}
           <div className="pb-filter-row">
             <span className="pb-filter-label">หมวด:</span>
             {CATEGORIES.map((c) => (
@@ -256,8 +328,8 @@ export default function BrowseClient({
             <div className="pb-empty">
               <div className="pb-empty-icon">
                 <svg
-                  width="18"
-                  height="18"
+                  width="20"
+                  height="20"
                   viewBox="0 0 16 16"
                   fill="none"
                   stroke="#9A9288"
@@ -311,11 +383,9 @@ export default function BrowseClient({
             >
               ← ก่อนหน้า
             </button>
-
             <span className="pb-page-info">
               หน้า {currentPage + 1} / {totalPages}
             </span>
-
             <button
               className="pb-page-btn"
               disabled={currentPage >= totalPages - 1 || isPending}
