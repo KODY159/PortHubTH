@@ -417,7 +417,7 @@ export default function ProfilePage() {
         <nav className="pp-nav">
           <div className="pp-nav-logo">
             <div className="pp-nav-mark">P</div>
-            <span className="pp-nav-brand">ThaiUniversityPorts.io</span>
+            <span className="pp-nav-brand">PortHubTH</span>
           </div>
           <button className="pp-nav-back" onClick={() => router.back()}>
             ← Back
