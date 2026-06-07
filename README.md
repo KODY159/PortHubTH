@@ -53,6 +53,8 @@ Create a `.env.local` file and add the required environment variables:
 ```env
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
+UPSTASH_REDIS_REST_URL=
+UPSTASH_REDIS_REST_TOKEN=
 ```
 
 Run the development server:
@@ -80,36 +82,6 @@ src/
 
 public/
 ```
-
-## Development Workflow
-
-This project follows a simple Git workflow:
-
-```txt
-main        → production
-dev         → integration/testing
-feature/*   → feature development
-```
-
-Typical workflow:
-
-```txt
-feature branch
-      ↓
-Pull Request
-      ↓
-dev
-      ↓
-Testing
-      ↓
-main
-```
-
-## Deployment
-
-Production deployments are handled through Vercel.
-
-Every push to the production branch triggers a new deployment automatically.
 
 ## Roadmap
 
