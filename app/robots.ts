@@ -7,6 +7,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: "/",
       disallow: ["/profile", "/uploadpage", "/saved"], // หน้า private
     },
-    sitemap: "https://portbaseth.com/sitemap.xml",
+    sitemap: "https://porthubth.com/sitemap.xml",
   };
 }

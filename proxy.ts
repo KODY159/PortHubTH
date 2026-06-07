@@ -62,26 +62,26 @@ export async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // const ip =
-  //   request.headers.get("x-forwarded-for")?.split(",")[0] ?? "anonymous";
-  // const path = request.nextUrl.pathname;
+  const ip =
+    request.headers.get("x-forwarded-for")?.split(",")[0] ?? "anonymous";
+  const path = request.nextUrl.pathname;
 
-  // const identity = user?.id ?? ip;
-  // if (path.startsWith("/uploadpage")) {
-  //   // use IP เพื่อป้องกันการ upload ที่ไม่ได้ login
-  //   const { success, limit, reset } = await rateLimits.upload.limit(identity);
-  //   if (!success) return tooManyRequests(reset, limit);
-  // } else if (path.startsWith("/api/questions")) {
-  //   // question limiter ใช้ IP เพราะคนถามคำถามอาจยังไม่ login
-  //   const { success, limit, reset } = await rateLimits.question.limit(identity);
+  const identity = user?.id ?? ip;
+  if (path.startsWith("/uploadpage")) {
+    // use IP เพื่อป้องกันการ upload ที่ไม่ได้ login
+    const { success, limit, reset } = await rateLimits.upload.limit(identity);
+    if (!success) return tooManyRequests(reset, limit);
+  } else if (path.startsWith("/api/questions")) {
+    // question limiter ใช้ IP เพราะคนถามคำถามอาจยังไม่ login
+    const { success, limit, reset } = await rateLimits.question.limit(identity);
 
-  //   if (!success) return tooManyRequests(reset, limit);
-  // } else {
-  //   // general limiter สำหรับทุก route ที่เหลือ
-  //   const { success, limit, reset } = await rateLimits.general.limit(identity);
+    if (!success) return tooManyRequests(reset, limit);
+  } else {
+    // general limiter สำหรับทุก route ที่เหลือ
+    const { success, limit, reset } = await rateLimits.general.limit(identity);
 
-  //   if (!success) return tooManyRequests(reset, limit);
-  // }
+    if (!success) return tooManyRequests(reset, limit);
+  }
 
   // ── Auth Guard ──────────────────────────────────────────
   // redirect ไป login ถ้าพยายามเข้า protected route โดยไม่ login

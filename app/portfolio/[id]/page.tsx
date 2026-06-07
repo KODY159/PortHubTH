@@ -50,14 +50,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     .eq("id", id)
     .single();
 
-  if (!data) return { title: "Portfolio Not Found | PortBaseTH" };
+  if (!data) return { title: "Portfolio Not Found | PortHubTH" };
 
   const parts = [data.title, data.faculty, data.university].filter(Boolean);
-  const seoTitle = parts.join(" · ") + " | PortBaseTH";
+  const seoTitle = parts.join(" · ") + " | PortHubTH";
   const seoDescription =
     data.description ??
-    `ดูตัวอย่าง Portfolio ${data.category ?? ""} ${data.university ?? ""} บน PortBaseTH`;
-  const url = `https://portbaseth.com/portfolio/${id}`;
+    `ดูตัวอย่าง Portfolio ${data.category ?? ""} ${data.university ?? ""} บน PortHubTH`;
+  const url = `https://porthubth.com/portfolio/${id}`;
 
   return {
     title: seoTitle,
@@ -130,7 +130,7 @@ export default async function Page({ params }: { params: { id: string } }) {
     keywords: [data.category, data.faculty, data.university]
       .filter(Boolean)
       .join(", "),
-    url: `https://portbaseth.com/portfolio/${id}`,
+    url: `https://porthubth.com/portfolio/${id}`,
   };
 
   await supabase.rpc("increment_view_count", { row_id: id });

@@ -249,7 +249,7 @@ export default function Navbar() {
               style={{ height: "42px", width: "auto" }}
             />
             <span className="p-logo-text">
-              Port<em>Base</em>TH
+              Port<em>Hub</em>TH
             </span>
           </Link>
 

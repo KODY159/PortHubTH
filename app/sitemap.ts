@@ -7,7 +7,7 @@ export default async function sitemap() {
 
   const portfolios =
     data?.map((p) => ({
-      url: `https://portbaseth.com/portfolio/${p.id}`,
+      url: `https://porthubth.com/portfolio/${p.id}`,
       lastModified: p.updated_at ?? new Date(), // ← fallback ถ้า null
       changeFrequency: "weekly" as const, // ← บอก Google ว่าอัปเดตบ่อยแค่ไหน
       priority: 0.8, // ← 0-1, home=1.0, portfolio=0.8
@@ -15,13 +15,13 @@ export default async function sitemap() {
 
   return [
     {
-      url: "https://portbaseth.com",
+      url: "https://porthubth.com",
       lastModified: new Date(),
       changeFrequency: "daily" as const,
       priority: 1.0,
     },
     {
-      url: "https://portbaseth.com/browse",
+      url: "https://porthubth.com/browse",
       lastModified: new Date(),
       changeFrequency: "hourly" as const, // ← browse อัปเดตบ่อยเพราะมีพอร์ตใหม่
       priority: 0.9,

@@ -16,17 +16,17 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://portbaseth.com"),
+  metadataBase: new URL("https://porthubth.com"),
 
   title: {
-    default: "PortBaseTH",
-    template: "%s | PortBaseTH",
+    default: "PortHubTH",
+    template: "%s | PortHubTH",
   },
 
   description: "แพลตฟอร์มแชร์ Portfolio สำหรับนักเรียนไทย",
 
   openGraph: {
-    siteName: "PortBaseTH",
+    siteName: "PortHubTH",
     type: "website",
   },
 };
@@ -39,12 +39,12 @@ export default function RootLayout({
   const siteJsonLd = {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    name: "PortBaseTH",
-    url: "https://portbaseth.com",
+    name: "PortHubTH",
+    url: "https://porthubth.com",
     description: "รวม Portfolio จากนักเรียนที่ยื่นเข้ามหาวิทยาลัยไทย",
     potentialAction: {
       "@type": "SearchAction",
-      target: "https://portbaseth.com/browse?search={search_term_string}",
+      target: "https://porthubth.com/browse?search={search_term_string}",
       "query-input": "required name=search_term_string",
     },
   };
