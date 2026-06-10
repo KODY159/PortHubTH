@@ -3,7 +3,6 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
-import { jwtDecode } from "jwt-decode";
 
 const rateLimits = {
   upload: new Ratelimit({
@@ -37,28 +36,6 @@ function tooManyRequests(reset: number, limit: number): NextResponse {
       },
     },
   );
-}
-
-function getUserIdFromCookies(request: NextRequest): string | null {
-  // hi
-  console.log(request.cookies.getAll().map((c) => c.name));
-  const authCookie = request.cookies
-    .getAll()
-    .find((c) => c.name.startsWith("sb-") && c.name.endsWith("-auth-token"));
-
-  console.log(authCookie?.value);
-  if (!authCookie) return null;
-
-  try {
-    const session = JSON.parse(authCookie.value);
-    const payload = jwtDecode<{ sub: string; exp: number }>(
-      session.access_token,
-    );
-    if (payload.exp < Date.now() / 1000) return null; //expired
-    return payload.sub;
-  } catch {
-    return null;
-  }
 }
 
 function addSecurityHeaders(response: NextResponse): NextResponse {
@@ -107,12 +84,11 @@ export async function proxy(request: NextRequest) {
     return supabaseResponse;
   }
 
-  const userId = getUserIdFromCookies(request);
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  console.log({
-    pathname,
-    userId,
-  });
+  const userId = user?.id ?? null;
 
   //auth guard
   const protectedRoutes = ["/uploadpage", "/profile", "/saved"];
