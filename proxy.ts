@@ -40,10 +40,13 @@ function tooManyRequests(reset: number, limit: number): NextResponse {
 }
 
 function getUserIdFromCookies(request: NextRequest): string | null {
+  // hi
+  console.log(request.cookies.getAll().map((c) => c.name));
   const authCookie = request.cookies
     .getAll()
     .find((c) => c.name.startsWith("sb-") && c.name.endsWith("-auth-token"));
 
+  console.log(authCookie?.value);
   if (!authCookie) return null;
 
   try {
@@ -105,6 +108,11 @@ export async function proxy(request: NextRequest) {
   }
 
   const userId = getUserIdFromCookies(request);
+
+  console.log({
+    pathname,
+    userId,
+  });
 
   //auth guard
   const protectedRoutes = ["/uploadpage", "/profile", "/saved"];
