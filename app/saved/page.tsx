@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
+import { User } from "@supabase/supabase-js";
 
 const CATEGORY_COLORS: Record<
   string,
@@ -22,22 +23,41 @@ const CATEGORY_COLORS: Record<
 };
 const DEFAULT_CC = { text: "#4A4640", bg: "#EDE8DC", border: "#C8BFA8" };
 
+type RawSaveItem = {
+  id: string;
+  created_at: string;
+  portfolios: {
+    id: string;
+    title: string;
+    cover_url: string;
+    category: string;
+    profiles: {
+      name: string;
+      avatar_url: string;
+    }[];
+  }[];
+};
+
+type SavedItem = {
+  id: string;
+  created_at: string;
+  portfolios: {
+    id: string;
+    title: string;
+    cover_url: string | null;
+    category: string | null;
+    profiles: {
+      name: string | null;
+      avatar_url: string | null;
+    } | null;
+  } | null;
+};
+
 export default function SavedPage() {
   const router = useRouter();
-  const [savedItems, setSavedItems] = useState<any[]>([]);
+  const [savedItems, setSavedItems] = useState<SavedItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<any>(null);
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) {
-        router.push("/login");
-        return;
-      }
-      setUser(session.user);
-      fetchSaved(session.user.id);
-    });
-  }, []);
+  const [user, setUser] = useState<User | null>(null);
 
   async function fetchSaved(userId: string) {
     const { data, error } = await supabase
@@ -52,9 +72,41 @@ export default function SavedPage() {
       setLoading(false);
       return;
     }
-    setSavedItems(data ?? []);
+
+    const normalize: SavedItem[] = ((data as RawSaveItem[]) ?? []).map(
+      (item) => {
+        const portfolio = Array.isArray(item.portfolios)
+          ? (item.portfolios[0] ?? null)
+          : (item.portfolios ?? null);
+
+        return {
+          id: item.id,
+          created_at: item.created_at,
+          portfolios: portfolio
+            ? {
+                ...portfolio,
+                profiles: Array.isArray(portfolio.profiles)
+                  ? (portfolio.profiles[0] ?? null)
+                  : (portfolio.profiles ?? null),
+              }
+            : null,
+        };
+      },
+    );
+    setSavedItems(normalize);
     setLoading(false);
   }
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) {
+        router.push("/login");
+        return;
+      }
+      setUser(session.user);
+      fetchSaved(session.user.id);
+    });
+  }, []);
 
   async function handleUnsave(savedId: string) {
     setSavedItems((prev) => prev.filter((s) => s.id !== savedId));
@@ -62,7 +114,7 @@ export default function SavedPage() {
       .from("saved_portfolios")
       .delete()
       .eq("id", savedId);
-    if (error) fetchSaved(user.id);
+    if (error && user) fetchSaved(user.id);
   }
 
   return (
